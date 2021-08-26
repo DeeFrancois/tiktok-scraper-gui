@@ -9,9 +9,14 @@
 # this is now version 0.5, version 1 will be "release" where I turn it into an exe file (or I may go back and use it as a foundation for learning how to implement a different front end gui)
 
 #TODO (8-26): fix download_last (old todo, dont remember if still needed), Dark mode, keep infinite scroll but allow to "go back", Improve layout (I don't like the check box row anymore)
-# Player refresh on download queue empty, try using flv to play videos in the main feed as well, show details on by default,
+# Player refresh on download queue empty, show details on by default, enter button clicks Get TikToks
 # use txt file to keep track of previous searches (cycle login feature from reddit project), sorting options, 
 # trending tab so I dont have to use my likes to demo, proxy mode can wait for after release
+
+#Note: cant do "play video in feed with vlc" unless i can find a way to play a tiktok video in vlc's network stream
+#  
+#Current Task: Play video in main feed with vlc
+# Set render
  
 import os
 import queue
@@ -1255,7 +1260,7 @@ class videoPlayer:
             player.play(filename)
             self.player_running=1
             self.player=player
-            self.player.keypress('m')
+            #self.player.keypress('m')
             
             self.button_dict[this_button]=player
 
