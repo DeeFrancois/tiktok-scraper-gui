@@ -8,15 +8,15 @@
 # and I have some ideas for changes so
 # this is now version 0.5, version 1 will be "release" where I turn it into an exe file (or I may go back and use it as a foundation for learning how to implement a different front end gui)
 
-#TODO (8-26): fix download_last (old todo, dont remember if still needed), Dark mode, keep infinite scroll but allow to "go back", Improve layout (I don't like the check box row anymore)
+#TODO (8-26): fix download_last (old todo, dont remember if still needed), apply dark theme, keep infinite scroll but allow to "go back", Improve layout (I don't like the check box row anymore)
 # Player refresh on download queue empty, show details on by default, enter button clicks Get TikToks
 # use txt file to keep track of previous searches (cycle login feature from reddit project), sorting options, 
 # trending tab so I dont have to use my likes to demo, proxy mode can wait for after release
+# fix variable/function names (couple variable/functiosn that dont reflect their actual use), organize layout, seperate classes into two files
+# add dialogue box at bottom for updating user on download queue or download (or preview) related errors
+# delete video in "show player" window, hotlink to the tiktokvideo in show details tab, automatically populate t2 bar on get_details trigger ..  
 
-#Note: cant do "play video in feed with vlc" unless i can find a way to play a tiktok video in vlc's network stream
-#  
-#Current Task: Play video in main feed with vlc
-# Set render
+#Current Task: Video preview on right click (mmb for details only), works fine, only applied to t1 so far
  
 import os
 import queue
@@ -40,6 +40,7 @@ from ffmpy import FFmpeg
 from PIL import Image, ImageDraw, ImageTk
 from TikTokApi import TikTokApi
 
+import vlc
 #UNcomment when using pyinstaller for --noconsole (but playwright console still opens unfortunately..)
 #sys.stderr=open('log.txt','w')
 #sys.stdout=open('log.txt','w')
@@ -67,7 +68,7 @@ class windowMaker:
         self.btn=[]
         self.finishedFirstGeneration=0
         self.generationLock=0
-        self.displayChunk=198 #500 is good
+        self.displayChunk=10 #198 last, 500 is good
         self.secondListFlag=0
         self.currTab = 0
         self.library=0
@@ -96,6 +97,9 @@ class windowMaker:
         self.t2_generation_lock=0
         self.t3_generation_lock=0
 
+        #self.vlc = vlc.Instance()
+        #self.player = self.vlc.media_player_new()
+        self.player = mpv.MPV(input_default_bindings=True,input_vo_keyboard=True)
         ###Start TikTokAPI Instance, all api method calls after need to use the did ("custom_did=..")
         self.verifyFp = "verify_kst2zk4o_Eb8C43pd_mnu3_4Vhc_ACNi_3KKX3Zc9dUNA"
         #verifyFp= "verify_kqr47ikj_0M0dsqdS_Nep1_4rOl_A2n6_Dsk4QASdikje"
@@ -475,9 +479,59 @@ class windowMaker:
         self.detailsLineFive.delete("1.0",tk.END)
         self.detailsLineFive.insert(tk.END,sound_ID)
 
+    def right_click(self,button_id,link):
+        self.get_details(button_id)
+        self.player.stop()
+
+        try:
+            os.remove('temp.mp4')
+        except:
+            print("no file")
+
+        current_button = self.frame_buttons.winfo_children()[button_id]
+
+        ydl_opts = {'outtmpl':'{0}/temp.mp4'.format(self.cwd)}
+
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            try:
+                ydl.download([link])
+            except:
+                print("error downloading")
         
-    def right_click(self,phrase):
-        self.get_details(phrase)
+        #self.player = mpv.MPV(input_default_bindings=True,wid=current_button.winfo_id())
+        #self.player.loop_playlist='inf'
+        self.player.wid=current_button.winfo_id()
+        self.player.play('temp.mp4')
+        
+        
+
+    def vlc_play_video(self,button_id,link):
+        
+        self.player.stop()
+
+        try:
+            os.remove('temp.mp4')
+        except:
+            print("no file")
+
+        current_button = self.frame_buttons.winfo_children()[button_id]
+
+        ydl_opts = {'outtmpl':'{0}/temp.mp4'.format(self.cwd)}
+
+        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+            try:
+                ydl.download([link])
+            except:
+                print("error downloading")
+        
+        #self.player = mpv.MPV(input_default_bindings=True,wid=current_button.winfo_id())
+        #self.player.loop_playlist='inf'
+        self.player.wid=current_button.winfo_id()
+        self.player.play('temp.mp4')
+        #self.player.set_hwnd(current_button.winfo_id())
+        #self.player.set_mrl('testing.mp4')
+        #self.player.play()
+
 
     def t1_display_a_like(self):
         if self.t1_index == len(self.user_liked_list):
@@ -505,9 +559,10 @@ class windowMaker:
         photo = ImageTk.PhotoImage(img)
         self.t1_img.append(photo)
 
-        thisBtn=tk.Button(self.frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,uniqueID,ind))
+        thisBtn=tk.Button(self.frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda:self.single_download_or_select(normalUrl,uniqueID,ind))
         thisBtn.grid(row=self.t1_row,column=self.t1_col)
-        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind))
+        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,normalUrl))
+        thisBtn.bind("<Button-2>",lambda e: self.get_details(ind)) #middle mouse for details without preview
         self.t1_button_dict[ind]=thisBtn
         self.t1_index+=1
         self.t1_col+=1
@@ -581,6 +636,7 @@ class windowMaker:
         thisBtn=tk.Button(self.t3frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,uniqueID,ind))
         thisBtn.grid(row=self.t3_row,column=self.t3_col)
         thisBtn.bind("<Button-3>",lambda e: self.right_click(ind))
+        thisBtn.bind("<Button-3>",lambda e: self.show_details(ind))
         self.t3_button_dict[ind]=thisBtn
         self.t3_index+=1
         self.t3_col+=1
@@ -730,10 +786,19 @@ class windowMaker:
         self.player_open=0
         self.var2.set(0)
     def close(self,event): #ESC
+        try:
+            os.remove('temp.mp4')
+        except:
+            pass
+
         self.root.destroy()
         sys.exit(0)
     
     def on_closing(self): #Binded to player
+        try:
+            os.remove('temp.mp4')
+        except:
+            pass
 
         self.player_open = 0
 
@@ -790,6 +855,10 @@ class windowMaker:
                 os.mkdir(folder)
     
     def on_closing_main(self):
+        try:
+            os.remove('temp.mp4')
+        except:
+            pass
         self.root.destroy()
         sys.exit(0)
 
@@ -1094,6 +1163,8 @@ class windowMaker:
         dl.daemon=True
         dl.start()
         self.create_folders()
+        self.var1.set(1)
+        self.openLibrary()
         self.root.after(3000,self.update)
         #print("Running main loop")
         self.root.mainloop()
