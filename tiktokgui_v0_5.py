@@ -67,7 +67,7 @@ class windowMaker:
         self.btn=[]
         self.finishedFirstGeneration=0
         self.generationLock=0
-        self.displayChunk=30 #198 last, 500 is good
+        self.displayChunk=500 #198 last, 500 is good
         self.secondListFlag=0
         self.currTab = 0
         self.library=0
@@ -655,6 +655,11 @@ class windowMaker:
         print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
         self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_verifyFp=self.verifyFp,use_test_endpoints=True)
         print("Retrieved {} tiktoks by uploads".format(len(self.user_post_list)))
+        #sorting
+        #{k: v for k, v in sorted(self.user_post_list,key=lambda item:item['stats']['playerCount'])}
+        sorted_list = sorted(self.user_post_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
+        self.user_post_list = sorted_list
+        print("sorted")
         self.t2_index=0
         self.lastQuery=self.username
         self.t2_display_button()
@@ -729,7 +734,7 @@ class windowMaker:
 
         #self.clear_canvas()
         print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
-        self.by_sound_list = self.api.bySound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
+        self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
         print("Retrieved {} tiktoks by sound".format(len(self.by_sound_list)))
         self.t3_index=0
         self.lastQuery=self.username
