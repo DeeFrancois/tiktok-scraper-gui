@@ -17,7 +17,8 @@
 # delete video in "show player" window, hotlink to the tiktokvideo in show details tab, automatically populate t2 bar on get_details trigger ..  
 
 #Current Task: Video preview on right click (mmb for details only), works fine, only applied to t1 so far
- 
+#Note: vlc not a good idea for this project since tiktok links dont work for network streams
+
 import os
 import queue
 import random
@@ -39,8 +40,6 @@ import youtube_dl
 from ffmpy import FFmpeg
 from PIL import Image, ImageDraw, ImageTk
 from TikTokApi import TikTokApi
-
-import vlc
 #UNcomment when using pyinstaller for --noconsole (but playwright console still opens unfortunately..)
 #sys.stderr=open('log.txt','w')
 #sys.stdout=open('log.txt','w')
@@ -86,23 +85,20 @@ class windowMaker:
         self.t1_download_list=[]
         self.t2_download_list=[]
         self.t3_download_list=[]
-        self.msg_queue=queue.Queue()
-        self.download_queue=queue.Queue()
-        self.exit_flag=0
-        self.t1_img=[]
-        self.t2_img=[]
-        self.t3_img=[]
-
+        self.t1_images=[]
+        self.t2_images=[]
+        self.t3_images=[]
         self.t1_generation_lock=0
         self.t2_generation_lock=0
         self.t3_generation_lock=0
 
-        #self.vlc = vlc.Instance()
-        #self.player = self.vlc.media_player_new()
+        self.msg_queue=queue.Queue()
+        self.download_queue=queue.Queue()
+        self.exit_flag=0
+       
         self.player = mpv.MPV(input_default_bindings=True,input_vo_keyboard=True)
-        ###Start TikTokAPI Instance, all api method calls after need to use the did ("custom_did=..")
+
         self.verifyFp = "verify_kst2zk4o_Eb8C43pd_mnu3_4Vhc_ACNi_3KKX3Zc9dUNA"
-        #verifyFp= "verify_kqr47ikj_0M0dsqdS_Nep1_4rOl_A2n6_Dsk4QASdikje"
         self.api = TikTokApi.get_instance(custom_verifyFp=self.verifyFp,use_test_endpoints=True)
         self.did = ''.join(random.choice(string.digits) for num in range(19))
         
@@ -125,8 +121,7 @@ class windowMaker:
     
     def update(self):
 
-#Scroll bar updates
-
+        #Scroll bar updates
         self.canvas.config(scrollregion=self.canvas.bbox('all'))
         self.t2canvas.config(scrollregion=self.t2canvas.bbox('all'))
         self.t3canvas.config(scrollregion=self.t3canvas.bbox('all'))
@@ -134,8 +129,7 @@ class windowMaker:
         if(self.player_open==1):
             self.app.canvas.config(scrollregion=self.app.canvas.bbox('all'))
 
-#Download Queueing for threading to prevent gui from locking up
-
+        #Download Queueing for threading to prevent gui from locking up
         try:
             msg = self.msg_queue.get(0)
             if msg == "Refresh Library":
@@ -146,10 +140,11 @@ class windowMaker:
         except queue.Empty:
             pass
 
-#Check scroll positions
+        #Check scroll positions
         self.root.after(500,self.update)
 
     def scrollGenerationTrigger(self):
+
         while True:
             time.sleep(1)
             y,x = self.ybar.get()
@@ -162,21 +157,21 @@ class windowMaker:
                 if tab == "Your Likes" and self.t1_generation_lock==0:
                     self.generationLock=1
                     self.clear_canvas()
-                    self.t1_img.clear()
+                    self.t1_images.clear()
                     self.display_likes()
                     self.generationLock=0
                     
                 elif tab == "User Posts" and self.t2_generation_lock==0:
                     self.generationLock=1
                     self.clear_canvas()
-                    self.t2_img.clear()
+                    self.t2_images.clear()
                     self.display_uploads()
                     self.generationLock=0
 
                 elif tab == "Videos By Sound" and self.t3_generation_lock==0:
                     self.generationLock=1
                     self.clear_canvas()
-                    self.t3_img.clear()
+                    self.t3_images.clear()
                     self.display_soundvids()
                     self.generationLock=0
 
@@ -190,7 +185,7 @@ class windowMaker:
         while count < display:
             count += 1
             try:
-                self.t1_display_a_like()
+                self.t1_display_a_tiktok()
             except:
                 pass
         self.add_scroll_buffer("Your Likes")
@@ -205,7 +200,7 @@ class windowMaker:
         while count < display:
             count += 1
             try:
-                self.t2_display_a_like()
+                self.t2_display_a_tiktok()
             except:
                 pass
         self.add_scroll_buffer("User Posts")
@@ -220,7 +215,7 @@ class windowMaker:
         while count < display:
             count += 1
             try:
-                self.t3_display_a_like()
+                self.t3_display_a_tiktok()
             except:
                 pass
         self.add_scroll_buffer("Videos By Sound")
@@ -235,19 +230,19 @@ class windowMaker:
         
         if(tab == "Your Likes"):
             for i in range(0,3):
-                self.t1_img.append(photo)
+                self.t1_images.append(photo)
                 thisBtn=tk.Button(self.frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center')
                 thisBtn.grid(row=self.t1_row+1,column=i)
                 
         elif(tab == "User Posts"):
             for i in range(0,3):
-                self.t2_img.append(photo)
+                self.t2_images.append(photo)
                 thisBtn=tk.Button(self.t2frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center')
                 thisBtn.grid(row=self.t2_row+1,column=i)
 
         elif(tab == "Videos By Sound"):
             for i in range(0,3):
-                self.t3_img.append(photo)
+                self.t3_images.append(photo)
                 thisBtn=tk.Button(self.t3frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center')
                 thisBtn.grid(row=self.t3_row+1,column=i)
 
@@ -479,7 +474,7 @@ class windowMaker:
         self.detailsLineFive.delete("1.0",tk.END)
         self.detailsLineFive.insert(tk.END,sound_ID)
 
-    def right_click(self,button_id,link):
+    def right_click(self,button_id,link,tab):
         self.get_details(button_id)
         self.player.stop()
 
@@ -488,7 +483,12 @@ class windowMaker:
         except:
             print("no file")
 
-        current_button = self.frame_buttons.winfo_children()[button_id]
+        if (tab==1):
+            current_button = self.t1_button_dict[button_id]
+        elif (tab==2):
+            current_button = self.t2_button_dict[button_id]
+        elif(tab==3):
+            current_button = self.t3_button_dict[button_id]
 
         ydl_opts = {'outtmpl':'{0}/temp.mp4'.format(self.cwd)}
 
@@ -533,7 +533,7 @@ class windowMaker:
         #self.player.play()
 
 
-    def t1_display_a_like(self):
+    def t1_display_a_tiktok(self):
         if self.t1_index == len(self.user_liked_list):
             print("End of list")
             return
@@ -557,12 +557,14 @@ class windowMaker:
         draw.text((170,440),like_count,(255,255,255)) # was 5,450
 
         photo = ImageTk.PhotoImage(img)
-        self.t1_img.append(photo)
+        self.t1_images.append(photo)
 
         thisBtn=tk.Button(self.frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda:self.single_download_or_select(normalUrl,uniqueID,ind))
         thisBtn.grid(row=self.t1_row,column=self.t1_col)
-        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,normalUrl))
+        
+        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,normalUrl,1))
         thisBtn.bind("<Button-2>",lambda e: self.get_details(ind)) #middle mouse for details without preview
+        
         self.t1_button_dict[ind]=thisBtn
         self.t1_index+=1
         self.t1_col+=1
@@ -570,7 +572,7 @@ class windowMaker:
             self.t1_col=0
             self.t1_row+=1
         
-    def t2_display_a_like(self):
+    def t2_display_a_tiktok(self):
         if self.t2_index == len(self.user_post_list):
             print("End of list")
             return
@@ -593,11 +595,14 @@ class windowMaker:
         draw.text((5,450),like_count,(255,255,255))
 
         photo = ImageTk.PhotoImage(img)
-        self.t2_img.append(photo)
+        self.t2_images.append(photo)
 
         thisBtn=tk.Button(self.t2frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,uniqueID,ind))
         thisBtn.grid(row=self.t2_row,column=self.t2_col)
-        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind))
+        
+        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,normalUrl,2))
+        thisBtn.bind("<Button-2>",lambda e: self.get_details(ind))
+
         self.t2_button_dict[ind]=thisBtn
         self.t2_index+=1
         self.t2_col+=1
@@ -607,7 +612,7 @@ class windowMaker:
 
 
     
-    def t3_display_a_like(self):
+    def t3_display_a_tiktok(self):
         if self.t3_index == len(self.by_sound_list):
             print("End of list")
             return
@@ -631,12 +636,14 @@ class windowMaker:
         draw.text((5,450),like_count,(255,255,255))
 
         photo = ImageTk.PhotoImage(img)
-        self.t3_img.append(photo)
+        self.t3_images.append(photo)
 
         thisBtn=tk.Button(self.t3frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,uniqueID,ind))
         thisBtn.grid(row=self.t3_row,column=self.t3_col)
-        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind))
-        thisBtn.bind("<Button-3>",lambda e: self.show_details(ind))
+        
+        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,normalUrl,3))
+        thisBtn.bind("<Button-2>",lambda e: self.get_details(ind))
+        
         self.t3_button_dict[ind]=thisBtn
         self.t3_index+=1
         self.t3_col+=1
@@ -677,6 +684,9 @@ class windowMaker:
                     theWidgetList.extend(tiktok.winfo_children()) 
             for tiktok in theWidgetList:
                 tiktok.grid_forget()
+            
+            self.t1_row=0
+            self.t1_col=0
         
         if (tab == "User Posts"):
             theWidgetList = self.t2canvas.winfo_children()
@@ -686,6 +696,9 @@ class windowMaker:
                     theWidgetList.extend(tiktok.winfo_children()) 
             for tiktok in theWidgetList:
                 tiktok.grid_forget()
+            
+            self.t2_row=0
+            self.t2_col=0
 
         if (tab == "Videos By Sound"):
             theWidgetList = self.t3canvas.winfo_children()
@@ -695,6 +708,9 @@ class windowMaker:
                     theWidgetList.extend(tiktok.winfo_children()) 
             for tiktok in theWidgetList:
                 tiktok.grid_forget()
+            
+            self.t3_row=0
+            self.t3_col=0
 
     def search_sounds(self,query):
         self.clear_canvas()
@@ -702,7 +718,7 @@ class windowMaker:
         img = Image.open('{0}/thumbs/default/blank.jpg'.format(self.cwd))
         img.thumbnail((260,462))
         photo = ImageTk.PhotoImage(img)
-        self.t3_img.append(photo)
+        self.t3_images.append(photo)
         list_index = 0
         for j in range(0,2):
             for i in range(0,3):
