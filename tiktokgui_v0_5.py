@@ -877,7 +877,10 @@ package ifneeded awdark 7.12 \
 """)
         self.root.tk.call("package","require",'awdark')
         
-        ttk.Style().theme_use('awdark')
+        #ttk.Style().theme_use('awdark')
+        s = ttk.Style(self.root)
+        s.theme_use('awdark')
+        s.configure('flat.TButton',relief='flat')
 
         self.root.title("Powered By Unofficial Tiktok-API and Youtube-DL")
         self.root.geometry("824x598")
@@ -969,7 +972,7 @@ package ifneeded awdark 7.12 \
         self.frame_canvas.grid_columnconfigure(0,weight=1)
         self.frame_canvas.grid_propagate(False)
         self.frame_canvas.pack(expand=True,fill='y',anchor='w')
-        self.canvas = tk.Canvas(self.frame_canvas,bg='black',width=813,height=463)
+        self.canvas = tk.Canvas(self.frame_canvas,bg='black',bd=0,highlightthickness=0,width=813,height=463)
         self.canvas.pack(padx=0,pady=2, expand=True,fill='y')
         #T1 Scroll Bar
         self.ybar=ttk.Scrollbar(self.frame_canvas,orient="vertical",command=self.canvas.yview)
@@ -1179,6 +1182,7 @@ package ifneeded awdark 7.12 \
 
         #################################################
         #print("Creating threads")
+
         th1 = threading.Thread(target=self.scrollGenerationTrigger)
         th1.daemon=True
         th1.start()
@@ -1211,24 +1215,24 @@ class videoPlayer:
         self.index=0
         self.root=master
         self.root.title("Companion Player")
-        self.root.geometry("300x600") #tiktok = 260,462
-        self.root.minsize(300,598)
+        self.root.geometry("284x598") #tiktok = 260,462
+        self.root.minsize(284,598)
         self.root.resizable(False,True)
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.pack(expand=True,fill='y')
         self.testFlag="BRUHH"
         self.player_running=0
-        self.tc=ttk.Notebook(self.main_frame)
-        self.t1=ttk.Frame(self.tc)
-        self.tc.add(self.t1,text="Recent TikToks - Click to Play")
-        self.tc.pack(expand=True,fill='y',pady=10)
+        #self.tc=ttk.Notebook(self.main_frame)
+        self.t1=ttk.Frame(self.main_frame)
+        #self.tc.add(self.t1,text="Recent TikToks - Click to Play")
+        #self.tc.pack(expand=True,fill='y',pady=10)
 
         #Folder Size Label
-        self.folder_size_label = ttk.Label(self.root,text='',width=20,font=self.label_font)
-        self.folder_size_label.place(x=173,y=11)
+        self.folder_size_label = ttk.Label(self.main_frame,text='',width=20,font=self.label_font)
+        self.folder_size_label.pack()
 
-        self.header_frame = ttk.Frame(self.t1,width=280)
-        self.header_frame.pack(pady=5,expand=False)
+        self.header_frame = ttk.Frame(self.main_frame)
+        self.header_frame.pack(pady=5,expand=False,fill='x')
 
         self.header_button =ttk.Button(self.header_frame,text="Mute",command=self.mute_player)
         self.header_button.grid(row=0,column=0,pady=5)
@@ -1243,15 +1247,15 @@ class videoPlayer:
         
         #scrollable frame
 
-        self.frame_canvas = ttk.Frame(self.t1)
+        self.frame_canvas = ttk.Frame(self.main_frame)
         self.frame_canvas.grid_rowconfigure(0,weight=1)
         self.frame_canvas.grid_columnconfigure(0,weight=1)
         self.frame_canvas.grid_propagate(False)
         self.frame_canvas.pack(expand=True,fill='y')
-        self.canvas = tk.Canvas(self.frame_canvas, bg="black",width=280,height=480)
-        self.canvas.pack(padx=2,pady=2, expand=True,fill='y')
+        self.canvas = tk.Canvas(self.frame_canvas, bd=0, highlightthickness=0,bg="black",width=280,height=480)
+        self.canvas.pack(expand=True,fill='y')
         #T1 Scroll Bar
-        self.ybar=tk.Scrollbar(self.frame_canvas,orient="vertical",command=self.canvas.yview)
+        self.ybar=ttk.Scrollbar(self.frame_canvas,orient="vertical",command=self.canvas.yview)
         self.ybar.grid(column=1,row=0,sticky='ns')
         self.canvas.configure(yscrollcommand=self.ybar.set)
 
