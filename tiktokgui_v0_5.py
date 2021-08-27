@@ -474,6 +474,10 @@ class windowMaker:
         self.detailsLineFive.delete("1.0",tk.END)
         self.detailsLineFive.insert(tk.END,sound_ID)
 
+        #autopopulate t2 bar
+        self.t2_retrieve_bar.delete(0,tk.END)
+        self.t2_retrieve_bar.insert(tk.END,author[1:])
+
     def right_click(self,button_id,link,tab):
         self.get_details(button_id)
         self.player.stop()
@@ -759,10 +763,10 @@ class windowMaker:
     def openLibrary(self):
 
         if(self.library==0):
-            self.root.geometry('1124x{0}'.format(self.root.winfo_height()))
+            self.root.geometry('1090x{0}'.format(self.root.winfo_height())) #1124
             self.library=1
         else:
-            self.root.geometry('824x{0}'.format(self.root.winfo_height()))
+            self.root.geometry('828x{0}'.format(self.root.winfo_height()))
             self.library=0
 
     def download_button(self):
@@ -882,6 +886,18 @@ class windowMaker:
         #Main Window Setup
         #print("Initializing")
         self.root = tk.Tk()
+        self.root.tk.eval("""
+set base_theme_dir ./awthemes-10.4.0/
+
+package ifneeded awthemes 10.4.0 \
+    [list source [file join $base_theme_dir awthemes.tcl]]
+package ifneeded awdark 7.12 \
+    [list source [file join $base_theme_dir awdark.tcl]]
+""")
+        self.root.tk.call("package","require",'awdark')
+        
+        ttk.Style().theme_use('awdark')
+
         self.root.title("Powered By Unofficial Tiktok-API and Youtube-DL")
         self.root.geometry("824x598")
         self.root.minsize(824,598)
@@ -891,11 +907,13 @@ class windowMaker:
 
         self.button_font = font.Font(size=30)
         #Tab Setup
-        self.mainFrame = tk.Frame(self.root)
+        self.mainFrame =ttk.Frame(self.root)
         
         self.mainFrame.pack(side='left',expand=False,fill='y')
 
-        self.tc = ttk.Notebook(self.mainFrame) # Tab Controller
+        self.tc = ttk.Notebook(self.mainFrame,width=824) # Tab Controller
+
+       
 
         self.t1 = ttk.Frame(self.tc)
         self.t2 = ttk.Frame(self.tc)
@@ -905,6 +923,9 @@ class windowMaker:
         self.tc.add(self.t2,text='User Posts')   #Tab Two
         self.tc.add(self.t3,text="Videos By Sound") #Tab Three
         self.tc.pack(expand=True,fill='y',pady=10)
+        
+        #self.control_button=ttk.Button(self.control_box,width=10,text="THIS IS A TEST")
+        #self.control_button.pack()
 
         self.t1.bind("<Visibility>",self.tab_switch) #Eventually utilize this so dont have to keep doing tab=tk.select("text") or whatever
         self.t2.bind("<Visibility>",self.tab_switch)
@@ -915,61 +936,67 @@ class windowMaker:
         self.var2 = tk.IntVar()
         self.var3 = tk.IntVar()
         self.var4 = tk.IntVar()
-        self.checkBoxFrame = tk.Frame(self.root)
-        self.checkBox = tk.Checkbutton(self.checkBoxFrame,text="Show Details",variable=self.var1,onvalue=1,offvalue=0,command=self.openLibrary)
+
+
+        self.control_box = ttk.Frame(self.mainFrame)
+        self.control_box.pack(expand=False,fill='x',anchor='s')
+        self.control_box.grid_columnconfigure(0,weight=1)
+        
+        self.checkBoxFrame =ttk.Frame(self.control_box)
+        self.checkBox = ttk.Checkbutton(self.checkBoxFrame,text="Show Details",variable=self.var1,onvalue=1,offvalue=0,command=self.openLibrary)
         self.checkBox.grid(row=0,column=0,padx=5)
-        self.testLabel = tk.Checkbutton(self.checkBoxFrame,text="Show Player",variable=self.var2,onvalue=1,offvalue=0,command=self.open_player)
+        self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text="Show Player",variable=self.var2,onvalue=1,offvalue=0,command=self.open_player)
         self.testLabel.grid(row=0,column=1,padx=5)
-        self.testLabel = tk.Checkbutton(self.checkBoxFrame,text="Selection Mode",variable=self.var3,onvalue=1,offvalue=0,command=self.select_mode)
+        self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text="Selection Mode",variable=self.var3,onvalue=1,offvalue=0,command=self.select_mode)
         self.testLabel.grid(row=0,column=3,padx=5)
-        self.testLabel = tk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
+        self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
         self.testLabel.grid(row=0,column=4,padx=5)
-        self.checkBoxFrame.place(x=300,y=5) #use to be 348
+        self.checkBoxFrame.grid(row=0,column=0) #use to be 348
 
 
         #Tab One - Your Likes
         
-        self.headerButtonFrame = tk.Frame(self.t1,width=816)
-        self.headerButtonFrame.pack(pady=5,expand=False)
+        self.headerButtonFrame =ttk.Frame(self.t1)
+        self.headerButtonFrame.pack(pady=5,expand=False,anchor='w')
         self.headerButtonFrame.grid_columnconfigure((0,1,2,3,5,6),weight=1,uniform="foo")
         
         var = tk.StringVar()
         
-        self.t1_retrieve_bar_label = tk.Label(self.headerButtonFrame,textvariable=var)
+        self.t1_retrieve_bar_label = ttk.Label(self.headerButtonFrame,textvariable=var)
         var.set("Enter Username: ")
         self.t1_retrieve_bar_label.grid(row=0,column=0)
-        self.t1_retrieve_bar = tk.Entry(self.headerButtonFrame)
+        self.t1_retrieve_bar = ttk.Entry(self.headerButtonFrame)
         self.t1_retrieve_bar.grid(row=0,column=1)
 
-        self.t1_retrieve_button = tk.Button(self.headerButtonFrame, height=1, text="Get TikToks",command=self.download_button)
+        self.t1_retrieve_button =ttk.Button(self.headerButtonFrame, text="Get TikToks",command=self.download_button)
         self.t1_retrieve_button.grid(row=0,column=2,columnspan=2)
         
-        self.t1_download_last_frame = tk.Frame(self.headerButtonFrame)
+        self.t1_download_last_frame =ttk.Frame(self.headerButtonFrame)
         self.t1_download_last_frame.grid(row=0,column=4,columnspan=2)
-        self.t1_download_last_label = tk.Label(self.t1_download_last_frame, text="Download Last(Max 500): ")
+        self.t1_download_last_label = ttk.Label(self.t1_download_last_frame, text="Download Last(Max 500): ")
         self.t1_download_last_label.grid(row=0,column=0)
-        self.t1_download_last_bar = tk.Entry(self.t1_download_last_frame,width=5)
+        self.t1_download_last_bar = ttk.Entry(self.t1_download_last_frame,width=5)
         self.t1_download_last_bar.grid(row=0,column=1)
 
-        self.t1_download_start_button=tk.Button(self.headerButtonFrame,height=1,text="Start Download",command=threading.Thread(target=self.download_last).start)
+        self.t1_download_start_button=ttk.Button(self.headerButtonFrame,text="Start Download",command=threading.Thread(target=self.download_last).start)
         self.t1_download_start_button.grid(row=0,column=6)
 
         
         #Scrollable Frame
-        self.frame_canvas = tk.Frame(self.t1)
+        self.frame_canvas =ttk.Frame(self.t1)
         self.frame_canvas.grid_rowconfigure(0,weight=1)
         self.frame_canvas.grid_columnconfigure(0,weight=1)
         self.frame_canvas.grid_propagate(False)
-        self.frame_canvas.pack(expand=True,fill='y')
-        self.canvas = tk.Canvas(self.frame_canvas, bg="grey",width=816,height=463)
+        self.frame_canvas.pack(expand=True,fill='y',anchor='w')
+        self.canvas = tk.Canvas(self.frame_canvas,bg='black',width=813,height=463)
         self.canvas.pack(padx=0,pady=2, expand=True,fill='y')
         #T1 Scroll Bar
-        self.ybar=tk.Scrollbar(self.frame_canvas,orient="vertical",command=self.canvas.yview)
+        self.ybar=ttk.Scrollbar(self.frame_canvas,orient="vertical",command=self.canvas.yview)
         self.ybar.grid(column=1,row=0,sticky='ns')
         self.canvas.configure(yscrollcommand=self.ybar.set)
 
         #Canvas inside Scrollable Frame
-        self.frame_buttons=tk.Frame(self.canvas,bg='grey')
+        self.frame_buttons=ttk.Frame(self.canvas)
         self.canvas.create_window((0,0),window=self.frame_buttons,anchor='nw')
         
 
@@ -981,49 +1008,49 @@ class windowMaker:
         ####################################################################################
                 #Tab Two - User Uploads
         #Retrieval Button
-        #self.GetPostsButton = tk.Button(self.t2, height=1, text="Get Posts",command=self.get_user_uploads)
+        #self.GetPostsButton =ttk.Button(self.t2, text="Get Posts",command=self.get_user_uploads)
         #self.GetPostsButton.pack()
 
-        self.t2_headerButtonFrame = tk.Frame(self.t2,width=816)
-        self.t2_headerButtonFrame.pack(pady=5,expand=False)
+        self.t2_headerButtonFrame =ttk.Frame(self.t2)
+        self.t2_headerButtonFrame.pack(pady=5,expand=False,anchor='w')
         self.t2_headerButtonFrame.grid_columnconfigure((0,1,2,3,5,6),weight=1,uniform="foo")
         
         var2 = tk.StringVar()
         
-        self.t2_retrieve_bar_label = tk.Label(self.t2_headerButtonFrame,textvariable=var)
+        self.t2_retrieve_bar_label = ttk.Label(self.t2_headerButtonFrame,textvariable=var)
         var2.set("Enter Username: ")
         self.t2_retrieve_bar_label.grid(row=0,column=0)
-        self.t2_retrieve_bar = tk.Entry(self.t2_headerButtonFrame)
+        self.t2_retrieve_bar = ttk.Entry(self.t2_headerButtonFrame)
         self.t2_retrieve_bar.grid(row=0,column=1)
 
-        self.t2_retrieve_button = tk.Button(self.t2_headerButtonFrame, height=1, text="Get TikToks",command=self.get_user_uploads)
+        self.t2_retrieve_button =ttk.Button(self.t2_headerButtonFrame, text="Get TikToks",command=self.get_user_uploads)
         self.t2_retrieve_button.grid(row=0,column=2,columnspan=2)
         
-        self.t2_download_last_frame = tk.Frame(self.t2_headerButtonFrame)
+        self.t2_download_last_frame =ttk.Frame(self.t2_headerButtonFrame)
         self.t2_download_last_frame.grid(row=0,column=4,columnspan=2)
-        self.t2_download_last_label = tk.Label(self.t2_download_last_frame, text="Download Last(Max 500): ")
+        self.t2_download_last_label = ttk.Label(self.t2_download_last_frame, text="Download Last(Max 500): ")
         self.t2_download_last_label.grid(row=0,column=0)
-        self.t2_download_last_bar = tk.Entry(self.t2_download_last_frame,width=5)
+        self.t2_download_last_bar = ttk.Entry(self.t2_download_last_frame,width=5)
         self.t2_download_last_bar.grid(row=0,column=1)
 
-        self.t2_download_start_button=tk.Button(self.t2_headerButtonFrame,height=1,text="Start Download",command=threading.Thread(target=self.download_last).start)
+        self.t2_download_start_button=ttk.Button(self.t2_headerButtonFrame,text="Start Download",command=threading.Thread(target=self.download_last).start)
         self.t2_download_start_button.grid(row=0,column=6)
 
         #Scrollable Frame
-        self.t2frame_canvas = tk.Frame(self.t2)
+        self.t2frame_canvas =ttk.Frame(self.t2)
         self.t2frame_canvas.grid_rowconfigure(0,weight=1)
         self.t2frame_canvas.grid_columnconfigure(0,weight=1)
         self.t2frame_canvas.grid_propagate(False)
-        self.t2frame_canvas.pack(expand=True,fill='y')
-        self.t2canvas = tk.Canvas(self.t2frame_canvas, bg="grey",width=816,height=463)
+        self.t2frame_canvas.pack(expand=True,fill='y',anchor='w')
+        self.t2canvas = tk.Canvas(self.t2frame_canvas, bg="black",width=813,height=463)
         self.t2canvas.pack(padx=0,pady=2, expand=True,fill='y')
         #T1 Scroll Bar
-        self.t2ybar=tk.Scrollbar(self.t2frame_canvas,orient="vertical",command=self.t2canvas.yview)
+        self.t2ybar=ttk.Scrollbar(self.t2frame_canvas,orient="vertical",command=self.t2canvas.yview)
         self.t2ybar.grid(column=1,row=0,sticky='ns')
         self.t2canvas.configure(yscrollcommand=self.t2ybar.set)
 
         #Canvas inside Scrollable Frame
-        self.t2frame_buttons=tk.Frame(self.t2canvas,bg='grey')
+        self.t2frame_buttons=ttk.Frame(self.t2canvas)
         self.t2canvas.create_window((0,0),window=self.t2frame_buttons,anchor='nw')
         
 
@@ -1037,46 +1064,46 @@ class windowMaker:
                         #Tab Three - Sound
         #Retrieval Button
 
-        self.t3_headerButtonFrame = tk.Frame(self.t3,width=816)
+        self.t3_headerButtonFrame =ttk.Frame(self.t3)
         self.t3_headerButtonFrame.pack(pady=5,expand=False)
         self.t3_headerButtonFrame.grid_columnconfigure((0,2,3,5,6),weight=1,uniform="foo")
         
         var3 = tk.StringVar()
         
-        self.t3_retrieve_bar_label = tk.Label(self.t3_headerButtonFrame,textvariable=var3)
+        self.t3_retrieve_bar_label = ttk.Label(self.t3_headerButtonFrame,textvariable=var3)
         var3.set("Search or Enter Sound ID: ")
         self.t3_retrieve_bar_label.grid(row=0,column=0,padx=(5,0))
-        self.t3_retrieve_bar = tk.Entry(self.t3_headerButtonFrame,width=15)
+        self.t3_retrieve_bar = ttk.Entry(self.t3_headerButtonFrame,width=15)
         self.t3_retrieve_bar.grid(row=0,column=1)
 
-        self.t3_retrieve_button = tk.Button(self.t3_headerButtonFrame, height=1, text="Get TikToks",command=self.get_sound_videos)
+        self.t3_retrieve_button =ttk.Button(self.t3_headerButtonFrame, text="Get TikToks",command=self.get_sound_videos)
         self.t3_retrieve_button.grid(row=0,column=2,columnspan=2)
         
-        self.t3_download_last_frame = tk.Frame(self.t3_headerButtonFrame)
+        self.t3_download_last_frame =ttk.Frame(self.t3_headerButtonFrame)
         self.t3_download_last_frame.grid(row=0,column=4,columnspan=2)
-        self.t3_download_last_label = tk.Label(self.t3_download_last_frame, text="Download Last(Max 500): ")
+        self.t3_download_last_label = ttk.Label(self.t3_download_last_frame, text="Download Last(Max 500): ")
         self.t3_download_last_label.grid(row=0,column=0)
-        self.t3_download_last_bar = tk.Entry(self.t3_download_last_frame,width=5)
+        self.t3_download_last_bar = ttk.Entry(self.t3_download_last_frame,width=5)
         self.t3_download_last_bar.grid(row=0,column=1)
 
-        self.t3_download_start_button=tk.Button(self.t3_headerButtonFrame,height=1,text="Start Download",command=threading.Thread(target=self.download_last).start)
+        self.t3_download_start_button=ttk.Button(self.t3_headerButtonFrame,text="Start Download",command=threading.Thread(target=self.download_last).start)
         self.t3_download_start_button.grid(row=0,column=6)
 
         #Scrollable Frame
-        self.t3frame_canvas = tk.Frame(self.t3)
+        self.t3frame_canvas =ttk.Frame(self.t3)
         self.t3frame_canvas.grid_rowconfigure(0,weight=1)
         self.t3frame_canvas.grid_columnconfigure(0,weight=1)
         self.t3frame_canvas.grid_propagate(False)
-        self.t3frame_canvas.pack(expand=True,fill='y')
-        self.t3canvas = tk.Canvas(self.t3frame_canvas, bg="grey",width=816,height=463)
+        self.t3frame_canvas.pack(expand=True,fill='y',anchor='w')
+        self.t3canvas = tk.Canvas(self.t3frame_canvas, bg="black",width=813,height=463)
         self.t3canvas.pack(padx=0,pady=2, expand=True,fill='y')
         #T1 Scroll Bar
-        self.t3ybar=tk.Scrollbar(self.t3frame_canvas,orient="vertical",command=self.t3canvas.yview)
+        self.t3ybar=ttk.Scrollbar(self.t3frame_canvas,orient="vertical",command=self.t3canvas.yview)
         self.t3ybar.grid(column=1,row=0,sticky='ns')
         self.t3canvas.configure(yscrollcommand=self.t3ybar.set)
 
         #Canvas inside Scrollable Frame
-        self.t3frame_buttons=tk.Frame(self.t3canvas,bg='grey')
+        self.t3frame_buttons=ttk.Frame(self.t3canvas)
         self.t3canvas.create_window((0,0),window=self.t3frame_buttons,anchor='nw')
         
 
@@ -1088,85 +1115,85 @@ class windowMaker:
 
         #####################################################################################
         #Bottom Feed - Might be unnecessary
-        #self.textFeed = tk.Text(self.mainFrame,pady=5,height=1)
+        #self.textFeed = tk.Text(self.mainFrame,pady=5)
         #self.textFeed.pack(expand=False,pady=5)
         #self.textFeed.insert(tk.INSERT,"Welcome")
-        #self.textFeed.config(wrap='none',height=1)
+        #self.textFeed.config(wrap='none')
 
         ## EXTRA DETAILS TAB ######################################
-        self.detailsFrame = tk.Frame(self.root,width=300)
-        self.detailsFrame.pack(side='left',fill='y',expand=False)
+        self.detailsFrame =ttk.Frame(self.root)
+        self.detailsFrame.pack(side='left',fill='y',expand=True,anchor='w')
         
         self.detailsFrame.grid_columnconfigure(0,weight=1)
         self.detailsFrame.grid_rowconfigure(0,weight=1)
-        self.detailsFrame.grid_rowconfigure(1,weight=1)
-        self.detailsFrame.grid_columnconfigure(1,weight=1)
+        self.detailsFrame.grid_rowconfigure(1,weight=0)
+        #self.detailsFrame.grid_columnconfigure(1,weight=1)
         self.detailsFrame.grid_rowconfigure(2,weight=1)
-        self.detailsFrame.grid_columnconfigure(2,weight=1)
+        #self.detailsFrame.grid_columnconfigure(2,weight=1)
         self.detailsFrame.grid_rowconfigure(3,weight=1)
-        self.detailsFrame.grid_columnconfigure(3,weight=1)
+        #self.detailsFrame.grid_columnconfigure(3,weight=1)
         self.detailsFrame.grid_rowconfigure(4,weight=1)
-        self.detailsFrame.grid_columnconfigure(4,weight=1)
+        #self.detailsFrame.grid_columnconfigure(4,weight=1)
         self.detailsFrame.grid_rowconfigure(5,weight=1)
-        self.detailsFrame.grid_columnconfigure(5,weight=1)
+        #self.detailsFrame.grid_columnconfigure(5,weight=1)
 
 
-        self.detailsLineOne = tk.Text(self.detailsFrame,pady=5,height=1,font=("TkDefaultFont",10))
+        self.detailsLineOne = tk.Text(self.detailsFrame,height=1,pady=5,font=("TkDefaultFont",10))
         self.detailsLineOne.grid(row=0,column=0)
         self.detailsLineOne.insert(tk.INSERT,"right click videos for details")
-        self.detailsLineOne.config(wrap='none',width=35,height=1)
+        self.detailsLineOne.config(wrap='none',width=35)
         
 
-        self.detailsAvatar = tk.Button(self.detailsFrame, text="Avatar")
+        self.detailsAvatar =ttk.Button(self.detailsFrame, text="Avatar")
         self.detailsAvatar.grid(row=1,column=0)
 
-        self.detailsLineTwo = tk.Text(self.detailsFrame,pady=5,height=1,font=("TkDefaultFont",10))
+        self.detailsLineTwo = tk.Text(self.detailsFrame, height=1,pady=5,font=("TkDefaultFont",10))
         self.detailsLineTwo.grid(row=2,column=0)
         self.detailsLineTwo.insert(tk.INSERT,"Nickname")
-        self.detailsLineTwo.config(wrap='none',width=20,height=1)
+        self.detailsLineTwo.config(wrap='none',width=20)
 
-        self.detailsLineThree = tk.Text(self.detailsFrame,pady=5,height=1,font=("TkDefaultFont",10))
+        self.detailsLineThree = tk.Text(self.detailsFrame,pady=5,font=("TkDefaultFont",10))
         self.detailsLineThree.grid(row=3,column=0)
         self.detailsLineThree.insert(tk.INSERT,"Bio")
         self.detailsLineThree.config(wrap='none',height=3,width=35)
 
-        self.detailsLineFour = tk.Text(self.detailsFrame,pady=5,height=1,font=("TkDefaultFont",10))
+        self.detailsLineFour = tk.Text(self.detailsFrame,height=1,pady=5,font=("TkDefaultFont",10))
         self.detailsLineFour.grid(row=4,column=0)
         self.detailsLineFour.insert(tk.INSERT,"Sound")
-        self.detailsLineFour.config(wrap='none',height=1,width=35)
+        self.detailsLineFour.config(wrap='none',width=35)
 
-        self.detailsLineFive = tk.Text(self.detailsFrame,pady=5,height=1,font=("TkDefaultFont",10))
+        self.detailsLineFive = tk.Text(self.detailsFrame,height=1,pady=5,font=("TkDefaultFont",10))
         self.detailsLineFive.grid(row=5,column=0)
         self.detailsLineFive.insert(tk.INSERT,"Sound ID")
-        self.detailsLineFive.config(wrap='none',height=1,width=37)
+        self.detailsLineFive.config(wrap='none',width=37)
 
         ####################################################
 
-        self.your_library_frame = tk.Frame(self.root,width=300)
-        self.your_library_frame.pack(side='left',fill='y',expand=False)
+        #self.your_library_frame =ttk.Frame(self.root,width=300)
+        #self.your_library_frame.pack(side='left',fill='y',expand=False)
         #One tiktok wide, infinite scroll, able to play on click
         
-        self.yL_canvas_frame = tk.Frame(self.your_library_frame)
-        self.yL_canvas_frame.grid_rowconfigure(0,weight=1)
-        self.yL_canvas_frame.grid_columnconfigure(0,weight=1)
-        self.yL_canvas_frame.grid_propagate(False)
-        self.yL_canvas_frame.pack(expand=True,fill='y')
-        self.yL_canvas = tk.Canvas(self.yL_canvas_frame, bg="grey",width=816,height=463)
-        self.yL_canvas.pack(padx=0,pady=2, expand=True,fill='y')
-        #T1 Scroll Bar
-        self.yL_ybar=tk.Scrollbar(self.yL_canvas_frame,orient="vertical",command=self.t3canvas.yview)
-        self.yL_ybar.grid(column=1,row=0,sticky='ns')
-        self.yL_canvas.configure(yscrollcommand=self.yL_ybar.set)
+        #self.yL_canvas_frame =ttk.Frame(self.your_library_frame)
+        #self.yL_canvas_frame.grid_rowconfigure(0,weight=1)
+        #self.yL_canvas_frame.grid_columnconfigure(0,weight=1)
+        #self.yL_canvas_frame.grid_propagate(False)
+        #self.yL_canvas_frame.pack(expand=True,fill='y')
+        #self.yL_canvas = tk.Canvas(self.yL_canvas_frame, bg="black",width=816,height=463)
+        #self.yL_canvas.pack(padx=0,pady=2, expand=True,fill='y')
+        ##T1 Scroll Bar
+        #self.yL_ybar=ttk.Scrollbar(self.yL_canvas_frame,orient="vertical",command=self.t3canvas.yview)
+        #self.yL_ybar.grid(column=1,row=0,sticky='ns')
+        #self.yL_canvas.configure(yscrollcommand=self.yL_ybar.set)
 
         #Canvas inside Scrollable Frame
-        self.yL_buttons=tk.Frame(self.yL_canvas,bg='grey')
-        self.yL_canvas.create_window((0,0),window=self.yL_buttons,anchor='nw')
+        #self.yL_buttons=ttk.Frame(self.yL_canvas)
+        #self.yL_canvas.create_window((0,0),window=self.yL_buttons,anchor='nw')
         
 
-        self.yL_canvas.config(scrollregion=self.yL_canvas.bbox('all'))
+        #self.yL_canvas.config(scrollregion=self.yL_canvas.bbox('all'))
 
         #self.t3canvas.bind_all("<MouseWheel>",self.t3on_mousewheel)
-        self.yL_canvas.yview_moveto('0')
+        #self.yL_canvas.yview_moveto('0')
 
 
         #################################################
@@ -1179,8 +1206,13 @@ class windowMaker:
         dl.daemon=True
         dl.start()
         self.create_folders()
+        
+        #Enter Default preferences and stuff
         self.var1.set(1)
         self.openLibrary()
+        self.t1_retrieve_bar.insert(0,'dee_learns_norsk') #Later on use txt file
+        self.t2_retrieve_bar.insert(0,'username')
+        
         self.root.after(3000,self.update)
         #print("Running main loop")
         self.root.mainloop()
@@ -1201,7 +1233,7 @@ class videoPlayer:
         self.root.geometry("300x600") #tiktok = 260,462
         self.root.minsize(300,598)
         self.root.resizable(False,True)
-        self.main_frame = tk.Frame(self.root)
+        self.main_frame = ttk.Frame(self.root)
         self.main_frame.pack(expand=True,fill='y')
         self.testFlag="BRUHH"
         self.player_running=0
@@ -1211,31 +1243,31 @@ class videoPlayer:
         self.tc.pack(expand=True,fill='y',pady=10)
 
         #Folder Size Label
-        self.folder_size_label = tk.Label(self.root,text='',width=20,height=1,font=self.label_font)
+        self.folder_size_label = ttk.Label(self.root,text='',width=20,font=self.label_font)
         self.folder_size_label.place(x=173,y=11)
 
-        self.header_frame = tk.Frame(self.t1,width=280)
+        self.header_frame = ttk.Frame(self.t1,width=280)
         self.header_frame.pack(pady=5,expand=False)
 
-        self.header_button = tk.Button(self.header_frame,height=1,text="Mute",command=self.mute_player)
+        self.header_button =ttk.Button(self.header_frame,text="Mute",command=self.mute_player)
         self.header_button.grid(row=0,column=0,pady=5)
 
-        self.header_button = tk.Button(self.header_frame,height=1,text="Open File Explorer",command=lambda :os.startfile('{0}/downloads'.format(self.cwd)))
+        self.header_button =ttk.Button(self.header_frame,text="Open File Explorer",command=lambda :os.startfile('{0}/downloads'.format(self.cwd)))
         self.header_button.grid(row=0,column=1,padx=10,pady=5)
 
-        self.header_button = tk.Button(self.header_frame,height=1,text="Refresh",command=self.grab_library)
+        self.header_button =ttk.Button(self.header_frame,text="Refresh",command=self.grab_library)
         self.header_button.grid(row=0,column=2,pady=5)
         ####
 
         
         #scrollable frame
 
-        self.frame_canvas = tk.Frame(self.t1)
+        self.frame_canvas = ttk.Frame(self.t1)
         self.frame_canvas.grid_rowconfigure(0,weight=1)
         self.frame_canvas.grid_columnconfigure(0,weight=1)
         self.frame_canvas.grid_propagate(False)
         self.frame_canvas.pack(expand=True,fill='y')
-        self.canvas = tk.Canvas(self.frame_canvas, bg="grey",width=280,height=480)
+        self.canvas = tk.Canvas(self.frame_canvas, bg="black",width=280,height=480)
         self.canvas.pack(padx=2,pady=2, expand=True,fill='y')
         #T1 Scroll Bar
         self.ybar=tk.Scrollbar(self.frame_canvas,orient="vertical",command=self.canvas.yview)
@@ -1243,7 +1275,7 @@ class videoPlayer:
         self.canvas.configure(yscrollcommand=self.ybar.set)
 
         #Canvas inside Scrollable Frame
-        self.frame_buttons=tk.Frame(self.canvas,bg='grey')
+        self.frame_buttons=ttk.Frame(self.canvas)
         self.canvas.create_window((0,0),window=self.frame_buttons,anchor='nw')
         
 
