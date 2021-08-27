@@ -3,7 +3,7 @@
 #monkey.patch_all()
 #before release: Check if exe filesize is improved when using selenium instead of playwright
 
-# Close to feeling good about where it's at BUT, the program will random hang during display_likes process sometimes
+# Need to eventually figure out why this hangs sometimes during display_likes process sometimes
 
 import os
 import queue
@@ -685,11 +685,6 @@ class windowMaker:
             self.user_post_list = sorted(self.user_post_list,key=lambda item: int(item['stats']['playCount']))
         
         print("Retrieved {} tiktoks by uploads".format(len(self.user_post_list)))
-        #sorting
-        #{k: v for k, v in sorted(self.user_post_list,key=lambda item:item['stats']['playerCount'])}
-        sorted_list = sorted(self.user_post_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
-        self.user_post_list = sorted_list
-        print("sorted")
         self.t2_index=0
         self.lastQuery=self.username
         self.t2_display_button()
@@ -783,7 +778,6 @@ class windowMaker:
             self.by_sound_list = sorted(self.by_sound_list,key=lambda item: int(item['stats']['playCount']))
         
         
-        self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
         print("Retrieved {} tiktoks by sound".format(len(self.by_sound_list)))
         self.t3_index=0
         self.lastQuery=self.username
@@ -928,9 +922,9 @@ class windowMaker:
         if self.t1_sort_mode == 1:
             self.t1_sort_selector_button.config(text="Sort - Oldest")
         elif self.t1_sort_mode == 2:
-            self.t1_sort_selector_button.config(text="Sort - Views Ascending")
+            self.t1_sort_selector_button.config(text="Sort - Views Descending")
         elif self.t1_sort_mode == 3:
-            self.t1_sort_selector_button.config(text="Sort - Views Descending") #Oldest First
+            self.t1_sort_selector_button.config(text="Sort - Views Ascending")
         else:
             self.t1_sort_mode=0
             self.t1_sort_selector_button.config(text="Sort - Recent") #Default 
@@ -940,9 +934,9 @@ class windowMaker:
         if self.t2_sort_mode == 1:
             self.t2_sort_selector_button.config(text="Sort - Oldest")
         elif self.t2_sort_mode == 2:
-            self.t2_sort_selector_button.config(text="Sort - Views Ascending")
+            self.t2_sort_selector_button.config(text="Sort - Views Descending")
         elif self.t2_sort_mode == 3:
-            self.t2_sort_selector_button.config(text="Sort - Views Descending") #Oldest First
+            self.t2_sort_selector_button.config(text="Sort - Views Ascending") #Oldest First
         else:
             self.t2_sort_mode=0
             self.t2_sort_selector_button.config(text="Sort - Recent") #Default 
@@ -952,9 +946,9 @@ class windowMaker:
         if self.t3_sort_mode == 1:
             self.t3_sort_selector_button.config(text="Sort - Oldest")
         elif self.t3_sort_mode == 2:
-            self.t3_sort_selector_button.config(text="Sort - Views Ascending")
+            self.t3_sort_selector_button.config(text="Sort - Views Descending")
         elif self.t3_sort_mode == 3:
-            self.t3_sort_selector_button.config(text="Sort - Views Descending") #Oldest First
+            self.t3_sort_selector_button.config(text="Sort - Views Ascending") #Oldest First
         else:
             self.t3_sort_mode=0
             self.t3_sort_selector_button.config(text="Sort - Recent") #Default 
@@ -978,9 +972,9 @@ package ifneeded awdark 7.12 \
         s.theme_use('awdark')
         s.configure('flat.TButton',relief='flat')
 
-        self.root.title("Powered By Unofficial Tiktok-API and Youtube-DL")
-        self.root.geometry("824x598")
-        self.root.minsize(824,598)
+        self.root.title("Github.com/DeeFrancois")
+        self.root.geometry("824x609") #598
+        self.root.minsize(824,609) #598
         self.root.resizable(False,True)
         self.root.bind('<Escape>',self.close)
         self.root.protocol("WM_DELETE_WINDOW",self.on_closing_main)
@@ -1022,11 +1016,13 @@ package ifneeded awdark 7.12 \
 
 
 
-        self.control_box = ttk.Frame(self.mainFrame)
-        self.control_box.pack(expand=False,fill='x',anchor='s')
-        self.control_box.grid_columnconfigure(0,weight=1)
+        self.bottom_control_box = ttk.Frame(self.mainFrame)
+        self.bottom_control_box.pack(expand=False,fill='x',anchor='s',pady=5)
+        self.bottom_control_box.grid_columnconfigure(0,weight=1)
+
+        self.bottom_text_feed = tk.Text(self.mainFrame, height=1,font=("TkDefaultFont",10))
         
-        self.checkBoxFrame =ttk.Frame(self.control_box)
+        self.checkBoxFrame =ttk.Frame(self.bottom_control_box)
         self.checkBox = ttk.Checkbutton(self.checkBoxFrame,text="Show Details",variable=self.var1,onvalue=1,offvalue=0,command=self.openLibrary)
         self.checkBox.grid(row=0,column=0,padx=5)
         self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text="Show Player",variable=self.var2,onvalue=1,offvalue=0,command=self.open_player)
@@ -1037,11 +1033,13 @@ package ifneeded awdark 7.12 \
         self.testLabel.grid(row=0,column=4,padx=5)
         self.checkBoxFrame.grid(row=0,column=0) #use to be 348
 
+        self.bottom_text_feed.pack(expand=False,fill='x',anchor='s')
+
 
         #Tab One - Your Likes
         
         self.headerButtonFrame =ttk.Frame(self.t1)
-        self.headerButtonFrame.pack(pady=5,expand=True,anchor='w',fill='x')
+        self.headerButtonFrame.pack(pady=5,expand=False,anchor='w',fill='x')
 
         for i in range(0,8):
             self.headerButtonFrame.grid_columnconfigure(i,weight=1)
@@ -1105,7 +1103,7 @@ package ifneeded awdark 7.12 \
         #self.GetPostsButton.pack()
 
         self.t2_headerButtonFrame =ttk.Frame(self.t2)
-        self.t2_headerButtonFrame.pack(pady=5,expand=True,fill='x',anchor='w')
+        self.t2_headerButtonFrame.pack(pady=5,expand=False,fill='x',anchor='w')
         
         for i in range(0,8):
             self.t2_headerButtonFrame.grid_columnconfigure(i,weight=1)
@@ -1163,7 +1161,7 @@ package ifneeded awdark 7.12 \
         #Retrieval Button
 
         self.t3_headerButtonFrame =ttk.Frame(self.t3)
-        self.t3_headerButtonFrame.pack(pady=5,expand=True,anchor='w',fill='x')
+        self.t3_headerButtonFrame.pack(pady=5,expand=False,anchor='w',fill='x')
         
         for i in range(0,8):
             self.t3_headerButtonFrame.grid_columnconfigure(i,weight=1)
