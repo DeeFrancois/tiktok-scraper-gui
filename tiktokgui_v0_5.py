@@ -67,7 +67,7 @@ class windowMaker:
         self.btn=[]
         self.finishedFirstGeneration=0
         self.generationLock=0
-        self.displayChunk=500 #198 last, 500 is good
+        self.displayChunk=50 #198 last, 500 is good
         self.secondListFlag=0
         self.currTab = 0
         self.library=0
@@ -92,6 +92,8 @@ class windowMaker:
         self.t2_generation_lock=0
         self.t3_generation_lock=0
 
+        self.t1_sort_mode=0
+
         self.msg_queue=queue.Queue()
         self.download_queue=queue.Queue()
         self.exit_flag=0
@@ -103,6 +105,9 @@ class windowMaker:
         self.api = TikTokApi.get_instance(custom_verifyFp=self.verifyFp,use_test_endpoints=True)
         self.did = ''.join(random.choice(string.digits) for num in range(19))
         
+    def change_display_count(self,count):
+        self.display_count = count
+    
     def on_mousewheel(self, event):
   
         if 'toplevel' in str(event.widget):
@@ -642,7 +647,26 @@ class windowMaker:
         self.username = self.t1_retrieve_bar.get()
         self.last_username = self.username
         print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
-        self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+
+        if self.t1_sort_mode==0: #0 - normal
+            self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+        
+        if self.t1_sort_mode==1: #1 normal reversed
+            self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.user_liked_list=list(reversed(self.user_liked_list))
+
+        if self.t1_sort_mode==2: #2 by views - reversed
+            print("Sorted by views descending")
+            self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.user_liked_list = sorted(self.user_liked_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
+        
+        if self.t1_sort_mode==3: #3 by views - ascending
+            print("sorted by views ascending")
+            self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.user_liked_list = sorted(self.user_liked_list,key=lambda item: int(item['stats']['playCount']))
+        
+        
+
         print("Retrieved {} tiktoks by uploads".format(len(self.user_liked_list)))
         #self.updateTextbox("Likes Retrieved!")
         self.t1_index=0
@@ -654,6 +678,10 @@ class windowMaker:
         self.username=self.t2_retrieve_bar.get()
         print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
         self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_verifyFp=self.verifyFp,use_test_endpoints=True)
+        if self.t2_sort_var.get()==1:
+            sorted_list = sorted(self.user_post_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
+            self.user_post_list = sorted_list
+
         print("Retrieved {} tiktoks by uploads".format(len(self.user_post_list)))
         #sorting
         #{k: v for k, v in sorted(self.user_post_list,key=lambda item:item['stats']['playerCount'])}
@@ -867,6 +895,18 @@ class windowMaker:
             pass
         self.root.destroy()
         sys.exit(0)
+    
+    def t1_select_sort_mode(self): #0 = No sort, 1 = Sort Views Descending, 2= sort views ascending, 3=Date OldDescending
+        self.t1_sort_mode+=1
+        if self.t1_sort_mode == 1:
+            self.t1_sort_selector_button.config(text="Sort - Oldest")
+        elif self.t1_sort_mode == 2:
+            self.t1_sort_selector_button.config(text="Sort - Views Ascending")
+        elif self.t1_sort_mode == 3:
+            self.t1_sort_selector_button.config(text="Sort - Views Descending") #Oldest First
+        else:
+            self.t1_sort_mode=0
+            self.t1_sort_selector_button.config(text="Sort - Recent") #Default 
 
     def createWindow(self):
         #Main Window Setup
@@ -925,6 +965,10 @@ package ifneeded awdark 7.12 \
         self.var2 = tk.IntVar()
         self.var3 = tk.IntVar()
         self.var4 = tk.IntVar()
+        self.t1_sort_var = tk.IntVar()
+        self.t2_sort_var = tk.IntVar()
+        self.t3_sort_var = tk.IntVar()
+
 
 
         self.control_box = ttk.Frame(self.mainFrame)
@@ -946,8 +990,12 @@ package ifneeded awdark 7.12 \
         #Tab One - Your Likes
         
         self.headerButtonFrame =ttk.Frame(self.t1)
-        self.headerButtonFrame.pack(pady=5,expand=False,anchor='w')
-        self.headerButtonFrame.grid_columnconfigure((0,1,2,3,5,6),weight=1,uniform="foo")
+        self.headerButtonFrame.pack(pady=5,expand=True,anchor='w',fill='x')
+
+        for i in range(0,8):
+            self.headerButtonFrame.grid_columnconfigure(i,weight=1)
+        #self.headerButtonFrame.grid_columnconfigure(4,weight=0)
+        #self.headerButtonFrame.grid_columnconfigure((0,1,2,3,5,6),weight=1,uniform="foo")
         
         var = tk.StringVar()
         
@@ -955,20 +1003,25 @@ package ifneeded awdark 7.12 \
         var.set("Enter Username: ")
         self.t1_retrieve_bar_label.grid(row=0,column=0)
         self.t1_retrieve_bar = ttk.Entry(self.headerButtonFrame)
+
         self.t1_retrieve_bar.grid(row=0,column=1)
 
         self.t1_retrieve_button =ttk.Button(self.headerButtonFrame, text="Get TikToks",command=self.download_button)
-        self.t1_retrieve_button.grid(row=0,column=2,columnspan=2)
+
+        self.t1_retrieve_button.grid(row=0,column=2,columnspan=2) #2,3
         
         self.t1_download_last_frame =ttk.Frame(self.headerButtonFrame)
-        self.t1_download_last_frame.grid(row=0,column=4,columnspan=2)
-        self.t1_download_last_label = ttk.Label(self.t1_download_last_frame, text="Download Last(Max 500): ")
+        self.t1_download_last_frame.grid(row=0,column=5,columnspan=2) #4 5
+        self.t1_download_last_label = ttk.Label(self.t1_download_last_frame, state='disabled',text="Download Last(Max 500): ")
         self.t1_download_last_label.grid(row=0,column=0)
-        self.t1_download_last_bar = ttk.Entry(self.t1_download_last_frame,width=5)
+        self.t1_download_last_bar = ttk.Entry(self.t1_download_last_frame,state='disabled',width=5)
         self.t1_download_last_bar.grid(row=0,column=1)
 
-        self.t1_download_start_button=ttk.Button(self.headerButtonFrame,text="Start Download",command=threading.Thread(target=self.download_last).start)
-        self.t1_download_start_button.grid(row=0,column=6)
+        self.t1_download_start_button=ttk.Button(self.headerButtonFrame, state='disabled',text="Start Downloads",command=threading.Thread(target=self.download_last).start)
+        self.t1_download_start_button.grid(row=0,column=7)
+
+        self.t1_sort_selector_button = ttk.Button(self.headerButtonFrame,text="Sort - Recent",command=self.t1_select_sort_mode)
+        self.t1_sort_selector_button.grid(row=0,column=4)
 
         
         #Scrollable Frame
