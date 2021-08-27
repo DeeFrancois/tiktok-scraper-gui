@@ -67,7 +67,7 @@ class windowMaker:
         self.btn=[]
         self.finishedFirstGeneration=0
         self.generationLock=0
-        self.displayChunk=10 #198 last, 500 is good
+        self.displayChunk=30 #198 last, 500 is good
         self.secondListFlag=0
         self.currTab = 0
         self.library=0
@@ -95,8 +95,9 @@ class windowMaker:
         self.msg_queue=queue.Queue()
         self.download_queue=queue.Queue()
         self.exit_flag=0
-       
-        self.player = mpv.MPV(input_default_bindings=True,input_vo_keyboard=True)
+        
+        self.last_played = ''
+        self.player = mpv.MPV(input_default_bindings=True,reset_on_next_file="pause",input_vo_keyboard=True)
 
         self.verifyFp = "verify_kst2zk4o_Eb8C43pd_mnu3_4Vhc_ACNi_3KKX3Zc9dUNA"
         self.api = TikTokApi.get_instance(custom_verifyFp=self.verifyFp,use_test_endpoints=True)
@@ -479,6 +480,15 @@ class windowMaker:
         self.t2_retrieve_bar.insert(tk.END,author[1:])
 
     def right_click(self,button_id,link,tab):
+        if self.player.time_remaining: #if playing video
+            if link == self.last_played:
+                self.player.keypress('p')
+                return
+            else:
+                self.last_played=link
+        else:
+            self.last_played=link
+
         self.get_details(button_id)
         self.player.stop()
 
@@ -506,35 +516,6 @@ class windowMaker:
         #self.player.loop_playlist='inf'
         self.player.wid=current_button.winfo_id()
         self.player.play('temp.mp4')
-        
-        
-
-    def vlc_play_video(self,button_id,link):
-        
-        self.player.stop()
-
-        try:
-            os.remove('temp.mp4')
-        except:
-            print("no file")
-
-        current_button = self.frame_buttons.winfo_children()[button_id]
-
-        ydl_opts = {'outtmpl':'{0}/temp.mp4'.format(self.cwd)}
-
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            try:
-                ydl.download([link])
-            except:
-                print("error downloading")
-        
-        #self.player = mpv.MPV(input_default_bindings=True,wid=current_button.winfo_id())
-        #self.player.loop_playlist='inf'
-        self.player.wid=current_button.winfo_id()
-        self.player.play('temp.mp4')
-        #self.player.set_hwnd(current_button.winfo_id())
-        #self.player.set_mrl('testing.mp4')
-        #self.player.play()
 
 
     def t1_display_a_tiktok(self):
