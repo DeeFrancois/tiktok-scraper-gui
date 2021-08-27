@@ -3,21 +3,7 @@
 #monkey.patch_all()
 #before release: Check if exe filesize is improved when using selenium instead of playwright
 
-#8-26: This was in my folder as "v1.9", with v2 coming as the release version
-# but it's been months since I opened this (the api stopped working) and now I've learned a bit more
-# and I have some ideas for changes so
-# this is now version 0.5, version 1 will be "release" where I turn it into an exe file (or I may go back and use it as a foundation for learning how to implement a different front end gui)
-
-#TODO (8-26): fix download_last (old todo, dont remember if still needed), apply dark theme, keep infinite scroll but allow to "go back", Improve layout (I don't like the check box row anymore)
-# Player refresh on download queue empty, show details on by default, enter button clicks Get TikToks
-# use txt file to keep track of previous searches (cycle login feature from reddit project), sorting options, 
-# trending tab so I dont have to use my likes to demo, proxy mode can wait for after release
-# fix variable/function names (couple variable/functiosn that dont reflect their actual use), organize layout, seperate classes into two files
-# add dialogue box at bottom for updating user on download queue or download (or preview) related errors
-# delete video in "show player" window, hotlink to the tiktokvideo in show details tab, automatically populate t2 bar on get_details trigger ..  
-
-#Current Task: Video preview on right click (mmb for details only), works fine, only applied to t1 so far
-#Note: vlc not a good idea for this project since tiktok links dont work for network streams
+# Close to feeling good about where it's at BUT, the program will random hang during display_likes process sometimes
 
 import os
 import queue
@@ -40,6 +26,7 @@ import youtube_dl
 from ffmpy import FFmpeg
 from PIL import Image, ImageDraw, ImageTk
 from TikTokApi import TikTokApi
+import webbrowser
 #UNcomment when using pyinstaller for --noconsole (but playwright console still opens unfortunately..)
 #sys.stderr=open('log.txt','w')
 #sys.stdout=open('log.txt','w')
@@ -93,6 +80,8 @@ class windowMaker:
         self.t3_generation_lock=0
 
         self.t1_sort_mode=0
+        self.t2_sort_mode=0
+        self.t3_sort_mode=0
 
         self.msg_queue=queue.Queue()
         self.download_queue=queue.Queue()
@@ -677,11 +666,24 @@ class windowMaker:
         self.clear_canvas()
         self.username=self.t2_retrieve_bar.get()
         print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
-        self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_verifyFp=self.verifyFp,use_test_endpoints=True)
-        if self.t2_sort_var.get()==1:
-            sorted_list = sorted(self.user_post_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
-            self.user_post_list = sorted_list
+        
+        if self.t2_sort_mode==0: #0 - normal
+            self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+        
+        if self.t2_sort_mode==1: #1 normal reversed
+            self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.user_post_list=list(reversed(self.user_post_list))
 
+        if self.t2_sort_mode==2: #2 by views - reversed
+            print("Sorted by views descending")
+            self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.user_post_list = sorted(self.user_post_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
+        
+        if self.t2_sort_mode==3: #3 by views - ascending
+            print("sorted by views ascending")
+            self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.user_post_list = sorted(self.user_post_list,key=lambda item: int(item['stats']['playCount']))
+        
         print("Retrieved {} tiktoks by uploads".format(len(self.user_post_list)))
         #sorting
         #{k: v for k, v in sorted(self.user_post_list,key=lambda item:item['stats']['playerCount'])}
@@ -762,11 +764,36 @@ class windowMaker:
 
         #self.clear_canvas()
         print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
+        
+        if self.t3_sort_mode==0: #0 - normal
+            self.by_sound_list = self.api.by_sound(username=self.username,count=self.displayChunk,custom_did=self.did)
+        
+        if self.t3_sort_mode==1: #1 normal reversed
+            self.by_sound_list = self.api.by_sound(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.by_sound_list=list(reversed(self.by_sound_list))
+
+        if self.t3_sort_mode==2: #2 by views - reversed
+            print("Sorted by views descending")
+            self.by_sound_list = self.api.by_sound(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.by_sound_list = sorted(self.by_sound_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
+        
+        if self.t3_sort_mode==3: #3 by views - ascending
+            print("sorted by views ascending")
+            self.by_sound_list = self.api.by_sound(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.by_sound_list = sorted(self.by_sound_list,key=lambda item: int(item['stats']['playCount']))
+        
+        
         self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
         print("Retrieved {} tiktoks by sound".format(len(self.by_sound_list)))
         self.t3_index=0
         self.lastQuery=self.username
         self.t3_display_button()
+
+    def link_callback(self,event): #Opens browsers on link click
+        url=self.detailsLineOne.get("1.0",tk.END)
+        if '@' in url:
+            url = 'https://www.tiktok.com/' + url
+            webbrowser.open_new(url)
 
     def display_sound_videos(self,soundID):
         print(soundID)
@@ -907,6 +934,30 @@ class windowMaker:
         else:
             self.t1_sort_mode=0
             self.t1_sort_selector_button.config(text="Sort - Recent") #Default 
+    
+    def t2_select_sort_mode(self): #0 = No sort, 1 = Sort Views Descending, 2= sort views ascending, 3=Date OldDescending
+        self.t2_sort_mode+=1
+        if self.t2_sort_mode == 1:
+            self.t2_sort_selector_button.config(text="Sort - Oldest")
+        elif self.t2_sort_mode == 2:
+            self.t2_sort_selector_button.config(text="Sort - Views Ascending")
+        elif self.t2_sort_mode == 3:
+            self.t2_sort_selector_button.config(text="Sort - Views Descending") #Oldest First
+        else:
+            self.t2_sort_mode=0
+            self.t2_sort_selector_button.config(text="Sort - Recent") #Default 
+    
+    def t3_select_sort_mode(self): #0 = No sort, 1 = Sort Views Descending, 2= sort views ascending, 3=Date OldDescending
+        self.t3_sort_mode+=1
+        if self.t3_sort_mode == 1:
+            self.t3_sort_selector_button.config(text="Sort - Oldest")
+        elif self.t3_sort_mode == 2:
+            self.t3_sort_selector_button.config(text="Sort - Views Ascending")
+        elif self.t3_sort_mode == 3:
+            self.t3_sort_selector_button.config(text="Sort - Views Descending") #Oldest First
+        else:
+            self.t3_sort_mode=0
+            self.t3_sort_selector_button.config(text="Sort - Recent") #Default 
 
     def createWindow(self):
         #Main Window Setup
@@ -1054,8 +1105,10 @@ package ifneeded awdark 7.12 \
         #self.GetPostsButton.pack()
 
         self.t2_headerButtonFrame =ttk.Frame(self.t2)
-        self.t2_headerButtonFrame.pack(pady=5,expand=False,anchor='w')
-        self.t2_headerButtonFrame.grid_columnconfigure((0,1,2,3,5,6),weight=1,uniform="foo")
+        self.t2_headerButtonFrame.pack(pady=5,expand=True,fill='x',anchor='w')
+        
+        for i in range(0,8):
+            self.t2_headerButtonFrame.grid_columnconfigure(i,weight=1)
         
         var2 = tk.StringVar()
         
@@ -1069,14 +1122,17 @@ package ifneeded awdark 7.12 \
         self.t2_retrieve_button.grid(row=0,column=2,columnspan=2)
         
         self.t2_download_last_frame =ttk.Frame(self.t2_headerButtonFrame)
-        self.t2_download_last_frame.grid(row=0,column=4,columnspan=2)
-        self.t2_download_last_label = ttk.Label(self.t2_download_last_frame, text="Download Last(Max 500): ")
+        self.t2_download_last_frame.grid(row=0,column=5,columnspan=2)
+        self.t2_download_last_label = ttk.Label(self.t2_download_last_frame, state='disabled', text="Download Last(Max 500): ")
         self.t2_download_last_label.grid(row=0,column=0)
-        self.t2_download_last_bar = ttk.Entry(self.t2_download_last_frame,width=5)
+        self.t2_download_last_bar = ttk.Entry(self.t2_download_last_frame, state='disabled', width=5)
         self.t2_download_last_bar.grid(row=0,column=1)
 
-        self.t2_download_start_button=ttk.Button(self.t2_headerButtonFrame,text="Start Download",command=threading.Thread(target=self.download_last).start)
-        self.t2_download_start_button.grid(row=0,column=6)
+        self.t2_download_start_button=ttk.Button(self.t2_headerButtonFrame, state='disabled', text="Start Downloads",command=threading.Thread(target=self.download_last).start)
+        self.t2_download_start_button.grid(row=0,column=7)
+
+        self.t2_sort_selector_button = ttk.Button(self.t2_headerButtonFrame,text="Sort - Recent",command=self.t2_select_sort_mode)
+        self.t2_sort_selector_button.grid(row=0,column=4)
 
         #Scrollable Frame
         self.t2frame_canvas =ttk.Frame(self.t2)
@@ -1084,7 +1140,7 @@ package ifneeded awdark 7.12 \
         self.t2frame_canvas.grid_columnconfigure(0,weight=1)
         self.t2frame_canvas.grid_propagate(False)
         self.t2frame_canvas.pack(expand=True,fill='y',anchor='w')
-        self.t2canvas = tk.Canvas(self.t2frame_canvas, bg="black",width=813,height=463)
+        self.t2canvas = tk.Canvas(self.t2frame_canvas, bg="black",bd=0,highlightthickness=0,width=813,height=463)
         self.t2canvas.pack(padx=0,pady=2, expand=True,fill='y')
         #T1 Scroll Bar
         self.t2ybar=ttk.Scrollbar(self.t2frame_canvas,orient="vertical",command=self.t2canvas.yview)
@@ -1107,8 +1163,10 @@ package ifneeded awdark 7.12 \
         #Retrieval Button
 
         self.t3_headerButtonFrame =ttk.Frame(self.t3)
-        self.t3_headerButtonFrame.pack(pady=5,expand=False)
-        self.t3_headerButtonFrame.grid_columnconfigure((0,2,3,5,6),weight=1,uniform="foo")
+        self.t3_headerButtonFrame.pack(pady=5,expand=True,anchor='w',fill='x')
+        
+        for i in range(0,8):
+            self.t3_headerButtonFrame.grid_columnconfigure(i,weight=1)
         
         var3 = tk.StringVar()
         
@@ -1122,14 +1180,17 @@ package ifneeded awdark 7.12 \
         self.t3_retrieve_button.grid(row=0,column=2,columnspan=2)
         
         self.t3_download_last_frame =ttk.Frame(self.t3_headerButtonFrame)
-        self.t3_download_last_frame.grid(row=0,column=4,columnspan=2)
-        self.t3_download_last_label = ttk.Label(self.t3_download_last_frame, text="Download Last(Max 500): ")
+        self.t3_download_last_frame.grid(row=0,column=5,columnspan=2)
+        self.t3_download_last_label = ttk.Label(self.t3_download_last_frame,state='disabled',  text="Download Last(Max 500): ")
         self.t3_download_last_label.grid(row=0,column=0)
-        self.t3_download_last_bar = ttk.Entry(self.t3_download_last_frame,width=5)
+        self.t3_download_last_bar = ttk.Entry(self.t3_download_last_frame,state='disabled', width=5)
         self.t3_download_last_bar.grid(row=0,column=1)
 
-        self.t3_download_start_button=ttk.Button(self.t3_headerButtonFrame,text="Start Download",command=threading.Thread(target=self.download_last).start)
-        self.t3_download_start_button.grid(row=0,column=6)
+        self.t3_download_start_button=ttk.Button(self.t3_headerButtonFrame,state='disabled', text="Start Downloads",command=threading.Thread(target=self.download_last).start)
+        self.t3_download_start_button.grid(row=0,column=7)
+
+        self.t3_sort_selector_button = ttk.Button(self.t3_headerButtonFrame,text="Sort - Recent",command=self.t3_select_sort_mode)
+        self.t3_sort_selector_button.grid(row=0,column=4)
 
         #Scrollable Frame
         self.t3frame_canvas =ttk.Frame(self.t3)
@@ -1137,7 +1198,7 @@ package ifneeded awdark 7.12 \
         self.t3frame_canvas.grid_columnconfigure(0,weight=1)
         self.t3frame_canvas.grid_propagate(False)
         self.t3frame_canvas.pack(expand=True,fill='y',anchor='w')
-        self.t3canvas = tk.Canvas(self.t3frame_canvas, bg="black",width=813,height=463)
+        self.t3canvas = tk.Canvas(self.t3frame_canvas, bg="black",bd=0,highlightthickness=0,width=813,height=463)
         self.t3canvas.pack(padx=0,pady=2, expand=True,fill='y')
         #T1 Scroll Bar
         self.t3ybar=ttk.Scrollbar(self.t3frame_canvas,orient="vertical",command=self.t3canvas.yview)
@@ -1182,8 +1243,10 @@ package ifneeded awdark 7.12 \
 
         self.detailsLineOne = tk.Text(self.detailsFrame,height=1,pady=5,font=("TkDefaultFont",10))
         self.detailsLineOne.grid(row=0,column=0)
-        self.detailsLineOne.insert(tk.INSERT,"right click videos for details")
+        #self.detailsLineOne.config(fg='blue')
+        self.detailsLineOne.insert(tk.INSERT,"Click here to open in browser")
         self.detailsLineOne.config(wrap='none',width=35)
+        self.detailsLineOne.bind("<Button-1>",self.link_callback)
         
 
         self.detailsAvatar =ttk.Button(self.detailsFrame, text="Avatar")
