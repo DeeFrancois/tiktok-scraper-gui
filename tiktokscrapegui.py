@@ -117,6 +117,8 @@ class windowMaker:
     def update(self):
 
         #Scroll bar updates
+        if self.display_chunk_entry.get()!=self.displayChunk:
+            self.displayChunk=int(self.display_chunk_entry.get())
         self.canvas.config(scrollregion=self.canvas.bbox('all'))
         self.t2canvas.config(scrollregion=self.t2canvas.bbox('all'))
         self.t3canvas.config(scrollregion=self.t3canvas.bbox('all'))
@@ -761,20 +763,20 @@ class windowMaker:
         print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
         
         if self.t3_sort_mode==0: #0 - normal
-            self.by_sound_list = self.api.by_sound(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
         
         if self.t3_sort_mode==1: #1 normal reversed
-            self.by_sound_list = self.api.by_sound(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
             self.by_sound_list=list(reversed(self.by_sound_list))
 
         if self.t3_sort_mode==2: #2 by views - reversed
             print("Sorted by views descending")
-            self.by_sound_list = self.api.by_sound(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
             self.by_sound_list = sorted(self.by_sound_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
         
         if self.t3_sort_mode==3: #3 by views - ascending
             print("sorted by views ascending")
-            self.by_sound_list = self.api.by_sound(username=self.username,count=self.displayChunk,custom_did=self.did)
+            self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
             self.by_sound_list = sorted(self.by_sound_list,key=lambda item: int(item['stats']['playCount']))
         
         
@@ -1023,14 +1025,23 @@ package ifneeded awdark 7.12 \
         self.bottom_text_feed = tk.Text(self.mainFrame, height=1,font=("TkDefaultFont",10))
         
         self.checkBoxFrame =ttk.Frame(self.bottom_control_box)
+        
+        self.change_display_chunk_frame = ttk.Frame(self.checkBoxFrame)
+        self.change_display_chunk_frame.grid(row=0,column=0,padx=5)
+
+        self.display_chunk_label = ttk.Label(self.change_display_chunk_frame,text="TikTok Pull Amount")
+        self.display_chunk_label.grid(row=0,column=0)
+        self.display_chunk_entry = ttk.Entry(self.change_display_chunk_frame,width=4)
+        self.display_chunk_entry.grid(row=0,column=1,padx=2)
+
         self.checkBox = ttk.Checkbutton(self.checkBoxFrame,text="Show Details",variable=self.var1,onvalue=1,offvalue=0,command=self.openLibrary)
-        self.checkBox.grid(row=0,column=0,padx=5)
+        self.checkBox.grid(row=0,column=1,padx=5)
         self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text="Show Player",variable=self.var2,onvalue=1,offvalue=0,command=self.open_player)
-        self.testLabel.grid(row=0,column=1,padx=5)
+        self.testLabel.grid(row=0,column=2,padx=5)
         self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text="Selection Mode",variable=self.var3,onvalue=1,offvalue=0,command=self.select_mode)
-        self.testLabel.grid(row=0,column=3,padx=5)
-        self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
         self.testLabel.grid(row=0,column=4,padx=5)
+        self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
+        self.testLabel.grid(row=0,column=5,padx=5)
         self.checkBoxFrame.grid(row=0,column=0) #use to be 348
 
         self.bottom_text_feed.pack(expand=False,fill='x',anchor='s')
@@ -1316,6 +1327,7 @@ package ifneeded awdark 7.12 \
         self.openLibrary()
         self.t1_retrieve_bar.insert(0,'dee_learns_norsk') #Later on use txt file
         self.t2_retrieve_bar.insert(0,'username')
+        self.display_chunk_entry.insert(0,self.displayChunk)
         
         self.root.after(3000,self.update)
         #print("Running main loop")
