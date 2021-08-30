@@ -13,6 +13,7 @@ import sys
 import threading
 import time
 import tkinter as tk
+from tkinter.constants import INSERT
 import tkinter.font as font
 import urllib
 import playsound
@@ -185,6 +186,8 @@ class windowMaker:
                 self.t1_display_a_tiktok()
             except:
                 pass
+            if count == 1:
+                self.get_details(0)
         self.add_scroll_buffer("Your Likes")
         self.t1_generation_lock=0
 
@@ -200,6 +203,9 @@ class windowMaker:
                 self.t2_display_a_tiktok()
             except:
                 pass
+            if count == 1:
+                self.get_details(0)
+
         self.add_scroll_buffer("User Posts")
         self.t2_generation_lock=0
 
@@ -215,6 +221,9 @@ class windowMaker:
                 self.t3_display_a_tiktok()
             except:
                 pass
+            if count == 1:
+                self.get_details(0)
+
         self.add_scroll_buffer("Videos By Sound")
         self.t3_generation_lock=0
         self.finishedFirstGeneration=1
@@ -282,7 +291,7 @@ class windowMaker:
     def download_last(self):
         from_select = 0
         tab = self.tc.tab(self.tc.select(),"text")
-        print("Called it")
+        #print("Called it")
         if(tab == "Your Likes"):
             theList=self.user_liked_list
             start_button = self.t1_download_start_button
@@ -322,7 +331,7 @@ class windowMaker:
         
         total = count
         loops = 0
-        print("Starting download")
+        #print("Starting download")
         #self.updateTextbox("Completed {0}/{1}".format(loops,total)) Cant use with multithreading, wait until msg queue is set up
         if from_select == 1:
             for index in dl_list:
@@ -338,7 +347,7 @@ class windowMaker:
                 self.download_queue.put((normalUrl,uniqueID))
                 count-=1
                 #self.updateTextbox("Completed {0}/{1}".format(loops,total))
-        print("Finished donwload")
+        #print("Finished donwload")
         if from_select == 1:
             self.deselect()
             from_select = 0
@@ -347,7 +356,7 @@ class windowMaker:
 
         self.continue_download=0
         self.start_download_list=0
-        print("Finished Download Last")
+        #print("Finished Download Last")
         sys.exit()
         #print("ran through")
     
@@ -491,7 +500,7 @@ class windowMaker:
         try:
             os.remove('temp.mp4')
         except:
-            print("no file")
+            pass
 
         if (tab==1):
             current_button = self.t1_button_dict[button_id]
@@ -506,7 +515,7 @@ class windowMaker:
             try:
                 ydl.download([link])
             except:
-                print("error downloading")
+                print("TikTok Blocked the download, maybe try again?")
         
         #self.player = mpv.MPV(input_default_bindings=True,wid=current_button.winfo_id())
         #self.player.loop_playlist='inf'
@@ -516,7 +525,7 @@ class windowMaker:
 
     def t1_display_a_tiktok(self):
         if self.t1_index == len(self.user_liked_list):
-            print("End of list")
+            #print("End of list")
             return
 
         img_url = self.user_liked_list[self.t1_index]['video']['originCover']
@@ -555,7 +564,7 @@ class windowMaker:
         
     def t2_display_a_tiktok(self):
         if self.t2_index == len(self.user_post_list):
-            print("End of list")
+            #print("End of list")
             return
         img_url = self.user_post_list[self.t2_index]['video']['originCover']
         author = self.user_post_list[self.t2_index]['author']['uniqueId']
@@ -595,7 +604,7 @@ class windowMaker:
     
     def t3_display_a_tiktok(self):
         if self.t3_index == len(self.by_sound_list):
-            print("End of list")
+            #print("End of list")
             return
         img_url = self.by_sound_list[self.t3_index]['video']['originCover']
         author = self.by_sound_list[self.t3_index]['author']['uniqueId']
@@ -633,11 +642,10 @@ class windowMaker:
             self.t3_row+=1
 
     def get_liked_list(self):
-
         self.clear_canvas()
         self.username = self.t1_retrieve_bar.get()
         self.last_username = self.username
-        print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
+        
 
         if self.t1_sort_mode==0: #0 - normal
             self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
@@ -647,27 +655,29 @@ class windowMaker:
             self.user_liked_list=list(reversed(self.user_liked_list))
 
         if self.t1_sort_mode==2: #2 by views - reversed
-            print("Sorted by views descending")
+            #print("Sorted by views descending")
             self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             self.user_liked_list = sorted(self.user_liked_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
         
         if self.t1_sort_mode==3: #3 by views - ascending
-            print("sorted by views ascending")
+            #print("sorted by views ascending")
             self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             self.user_liked_list = sorted(self.user_liked_list,key=lambda item: int(item['stats']['playCount']))
         
         
 
-        print("Retrieved {} tiktoks by uploads".format(len(self.user_liked_list)))
+        print("Retrieved {} of your likes".format(len(self.user_liked_list)))
         #self.updateTextbox("Likes Retrieved!")
         self.t1_index=0
         self.lastQuery=self.username
         self.t1_display_button()
 
     def get_user_uploads(self):
+        print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds to pull 500 videos")
+        
         self.clear_canvas()
         self.username=self.t2_retrieve_bar.get()
-        print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
+        
         
         if self.t2_sort_mode==0: #0 - normal
             self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
@@ -677,12 +687,10 @@ class windowMaker:
             self.user_post_list=list(reversed(self.user_post_list))
 
         if self.t2_sort_mode==2: #2 by views - reversed
-            print("Sorted by views descending")
             self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             self.user_post_list = sorted(self.user_post_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
         
         if self.t2_sort_mode==3: #3 by views - ascending
-            print("sorted by views ascending")
             self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             self.user_post_list = sorted(self.user_post_list,key=lambda item: int(item['stats']['playCount']))
         
@@ -742,7 +750,7 @@ class windowMaker:
                 current = top_sounds[list_index]['music']['title']
                 soundID = top_sounds[list_index]['music']['id']
                 #urllib.request.urlretrieve(current,'{}/sounds/sound{}.mp3'.format(self.cwd,i))
-                print(current)
+                #print(current)
                 thisBtn=tk.Button(self.t3frame_buttons,height=461,width=261,image=photo,compound='center',pady=1,padx=1,text=current, command=lambda a = soundID: self.updateSoundBox(soundID))
                 thisBtn.grid(row=j,column=i)
                 list_index+=1
@@ -770,12 +778,12 @@ class windowMaker:
             self.by_sound_list=list(reversed(self.by_sound_list))
 
         if self.t3_sort_mode==2: #2 by views - reversed
-            print("Sorted by views descending")
+            #print("Sorted by views descending")
             self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
             self.by_sound_list = sorted(self.by_sound_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
         
         if self.t3_sort_mode==3: #3 by views - ascending
-            print("sorted by views ascending")
+            #print("sorted by views ascending")
             self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
             self.by_sound_list = sorted(self.by_sound_list,key=lambda item: int(item['stats']['playCount']))
         
@@ -807,10 +815,12 @@ class windowMaker:
             self.library=0
 
     def download_button(self):
+        #print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds to pull 500 videos")
         #self.msg_queue.append("Don't worry it's working!")
         #self.msg_queue.append("...")
         #self.msg_queue.append("..")
         #self.msg_queue.append("....")
+        #print("")
         self.update_flag=1
         self.get_liked_list()
         self.update_flag=0
@@ -869,7 +879,7 @@ class windowMaker:
         if(self.var3.get()==1):
             self.deselect()
             self.var3.set(0)
-        print(event)
+        #print(event)
     
     def select_mode(self):
 
@@ -954,7 +964,12 @@ class windowMaker:
         else:
             self.t3_sort_mode=0
             self.t3_sort_selector_button.config(text="Sort - Recent") #Default 
-
+    def stdout_redirector(self,inputstr):
+        #print("Sending text to bottom: ",inputstr)
+        self.bottom_text_feed.see(tk.END)
+        self.bottom_text_feed.insert(tk.END,inputstr)
+        #self.bottom_text_feed
+        #self.bottom_text_feed.see()
     def createWindow(self):
         #Main Window Setup
         #print("Initializing")
@@ -1023,13 +1038,14 @@ package ifneeded awdark 7.12 \
         self.bottom_control_box.grid_columnconfigure(0,weight=1)
 
         self.bottom_text_feed = tk.Text(self.mainFrame, height=1,font=("TkDefaultFont",10))
+        sys.stdout.write = self.stdout_redirector
         
         self.checkBoxFrame =ttk.Frame(self.bottom_control_box)
         
         self.change_display_chunk_frame = ttk.Frame(self.checkBoxFrame)
         self.change_display_chunk_frame.grid(row=0,column=0,padx=5)
 
-        self.display_chunk_label = ttk.Label(self.change_display_chunk_frame,text="TikTok Pull Amount")
+        self.display_chunk_label = ttk.Label(self.change_display_chunk_frame,text="Initial Pull Amount")
         self.display_chunk_label.grid(row=0,column=0)
         self.display_chunk_entry = ttk.Entry(self.change_display_chunk_frame,width=4)
         self.display_chunk_entry.grid(row=0,column=1,padx=2)
@@ -1549,8 +1565,8 @@ class DownloaderThread(threading.Thread):
                 count = 0
                 pass
 def main():
-    print("This program is powered by the following Github Repos: TikTok-Api, Python-MPV, and Youtube-Dl")
-    print("Please do not close this window, it will be used for the download process")
+    print("This program is powered by TikTok-Api, Python-MPV, and youtube-dl")
+    print("Please do not close this window, it will be used for updates on the download process")
     window = windowMaker()
     window.createWindow()
 
