@@ -28,6 +28,7 @@ from ffmpy import FFmpeg
 from PIL import Image, ImageDraw, ImageTk
 from TikTokApi import TikTokApi
 import webbrowser
+import json
 #UNcomment when using pyinstaller for --noconsole (but playwright console still opens unfortunately..)
 #sys.stderr=open('log.txt','w')
 #sys.stdout=open('log.txt','w')
@@ -528,6 +529,9 @@ class windowMaker:
             #print("End of list")
             return
 
+        #print(self.user_liked_list[0])
+        #print(self.user_liked_list[0]['video'])
+        #print("Hmm: ",self.user_liked_list[self.t1_index]['video']['originCover'])
         img_url = self.user_liked_list[self.t1_index]['video']['originCover']
         author = self.user_liked_list[self.t1_index]['author']['uniqueId']
         download_url = self.user_liked_list[self.t1_index]['video']['downloadAddr']
@@ -645,6 +649,18 @@ class windowMaker:
         self.clear_canvas()
         self.username = self.t1_retrieve_bar.get()
         self.last_username = self.username
+        
+        if os.path.isfile('likesbackup.json'):
+            print("Back up detected")
+            
+            self.user_liked_list=[]
+            with open('likesbackup.json') as file:
+                self.user_liked_list=json.load(file)
+                    
+            self.t1_index = 0
+            self.lastQuery=self.username
+            self.t1_display_button()
+            return
         
 
         if self.t1_sort_mode==0: #0 - normal
@@ -970,6 +986,11 @@ class windowMaker:
         self.bottom_text_feed.insert(tk.END,inputstr)
         #self.bottom_text_feed
         #self.bottom_text_feed.see()
+    def backup_likes(self):
+        with open('likesbackup.json','w') as f:
+                #print(self.deleted_list)
+                json.dump(self.user_liked_list,f)
+        
     def createWindow(self):
         #Main Window Setup
         #print("Initializing")
@@ -1038,7 +1059,7 @@ package ifneeded awdark 7.12 \
         self.bottom_control_box.grid_columnconfigure(0,weight=1)
 
         self.bottom_text_feed = tk.Text(self.mainFrame, height=1,font=("TkDefaultFont",10))
-        sys.stdout.write = self.stdout_redirector
+        #sys.stdout.write = self.stdout_redirector
         
         self.checkBoxFrame =ttk.Frame(self.bottom_control_box)
         
@@ -1052,12 +1073,15 @@ package ifneeded awdark 7.12 \
 
         self.checkBox = ttk.Checkbutton(self.checkBoxFrame,text="Show Details",variable=self.var1,onvalue=1,offvalue=0,command=self.openLibrary)
         self.checkBox.grid(row=0,column=1,padx=5)
-        self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text="Show Player",variable=self.var2,onvalue=1,offvalue=0,command=self.open_player)
-        self.testLabel.grid(row=0,column=2,padx=5)
-        self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text="Selection Mode",variable=self.var3,onvalue=1,offvalue=0,command=self.select_mode)
-        self.testLabel.grid(row=0,column=4,padx=5)
-        self.testLabel = ttk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
-        self.testLabel.grid(row=0,column=5,padx=5)
+        self.check_showplayer = ttk.Checkbutton(self.checkBoxFrame,text="Show Player",variable=self.var2,onvalue=1,offvalue=0,command=self.open_player)
+        self.check_showplayer.grid(row=0,column=2,padx=5)
+        self.check_selection = ttk.Checkbutton(self.checkBoxFrame,text="Selection Mode",variable=self.var3,onvalue=1,offvalue=0,command=self.select_mode)
+        self.check_selection.grid(row=0,column=4,padx=5)
+        self.check_proxy = ttk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
+        self.check_proxy.grid(row=0,column=5,padx=5)
+        self.button_cache_likes = ttk.Button(self.checkBoxFrame,text="Backup Likes",command=self.backup_likes)
+        self.button_cache_likes.grid(row=0,column=6,padx=6)
+
         self.checkBoxFrame.grid(row=0,column=0) #use to be 348
 
         self.bottom_text_feed.pack(expand=False,fill='x',anchor='s')
