@@ -4,6 +4,7 @@
 #before release: Check if exe filesize is improved when using selenium instead of playwright
 
 # Need to eventually figure out why this hangs sometimes during display_likes process sometimes
+# Note: Cached Lists only last a day since the links are not permament (could be less than a day but haven't tested to find exact duration)
 
 import os
 import queue
@@ -527,6 +528,7 @@ class windowMaker:
     def t1_display_a_tiktok(self):
         if self.t1_index == len(self.user_liked_list):
             #print("End of list")
+            print("End of list")
             return
 
         #print(self.user_liked_list[0])
@@ -650,17 +652,20 @@ class windowMaker:
         self.username = self.t1_retrieve_bar.get()
         self.last_username = self.username
         
-        if os.path.isfile('likesbackup.json'):
-            print("Back up detected")
+
+        if os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.displayChunk)):
+            #print("Back up detected")
             
             self.user_liked_list=[]
-            with open('likesbackup.json') as file:
+            with open('cachedpulls/{}_likes_backup.json'.format(self.username)) as file:
                 self.user_liked_list=json.load(file)
                     
-            self.t1_index = 0
-            self.lastQuery=self.username
-            self.t1_display_button()
-            return
+            print("Length on json: ",len(self.user_liked_list))
+            if len(self.user_liked_list) >= self.displayChunk:
+                self.t1_index = 0
+                self.lastQuery=self.username
+                self.t1_display_button()
+                return
         
 
         if self.t1_sort_mode==0: #0 - normal
@@ -693,6 +698,21 @@ class windowMaker:
         
         self.clear_canvas()
         self.username=self.t2_retrieve_bar.get()
+        self.last_username=self.username
+
+        if os.path.isfile('cachedpulls/{}_posts_backup.json'.format(self.username)):
+            #print("Back up detected")
+            
+            self.user_liked_list=[]
+            with open('cachedpulls/{}_posts_backup.json'.format(self.username)) as file:
+                self.user_post_list=json.load(file)
+                    
+            print("Length on json: ",len(self.user_post_list))
+            if len(self.user_post_list) >= self.displayChunk:
+                self.t2_index = 0
+                self.lastQuery=self.username
+                self.t2_display_button()
+                return
         
         
         if self.t2_sort_mode==0: #0 - normal
@@ -987,9 +1007,13 @@ class windowMaker:
         #self.bottom_text_feed
         #self.bottom_text_feed.see()
     def backup_likes(self):
-        with open('likesbackup.json','w') as f:
+        with open('cachedpulls/{}_likes_backup.json'.format(self.username),'w') as f:
                 #print(self.deleted_list)
                 json.dump(self.user_liked_list,f)
+    def backup_posts(self):
+        with open('cachedpulls/{}_post_backup.json'.format(self.username),'w') as f:
+                #print(self.deleted_list)
+                json.dump(self.user_post_list,f)
         
     def createWindow(self):
         #Main Window Setup
