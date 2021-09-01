@@ -118,7 +118,12 @@ class windowMaker:
                 self.t3canvas.yview_scroll(int(-1*(event.delta/100)), "units")
     
     def update(self):
-
+        if self.t1_generation_lock==0:
+            self.t1_retrieve_button.config(state='enabled')
+        if self.t2_generation_lock==0:
+            self.t2_retrieve_button.config(state='enabled')
+        if self.t3_generation_lock==0:
+            self.t3_retrieve_button.config(state='enabled')
         #Scroll bar updates
         if self.display_chunk_entry.get()!=self.displayChunk:
             self.displayChunk=int(self.display_chunk_entry.get())
@@ -147,11 +152,12 @@ class windowMaker:
 
         while True:
             time.sleep(1)
-            y,x = self.ybar.get()
-            y2,x = self.t2ybar.get()
-            y3,x = self.t3ybar.get()
+            x,y = self.ybar.get()
+            x,y2 = self.t2ybar.get()
+            x,y3 = self.t3ybar.get()
             tab = self.tc.tab(self.tc.select(),"text")
             #print("Y: ",y," TAB 2 Y: ",y2, " TAB 3 Y: ", y3)
+            #print(y)
             if ((y >= .96 and tab=="Your Likes") or (y2 >= .96 and tab=="User Posts") or (y3 >= .96 and tab=="Videos By Sound")) and self.finishedFirstGeneration==1 and self.generationLock==0:
             #print("End of scrollbar, display more")
                 if tab == "Your Likes" and self.t1_generation_lock==0:
@@ -179,10 +185,12 @@ class windowMaker:
         self.modified=1
     
     def display_likes(self):
+        self.t1_retrieve_button.config(state='disabled')
         self.t1_generation_lock=1
         count = 0
         display = 99
-        while count < display:
+        self.display_likes_continue = 1
+        while count < display and self.display_likes_continue:
             count += 1
             try:
                 self.t1_display_a_tiktok()
@@ -196,6 +204,7 @@ class windowMaker:
         self.finishedFirstGeneration=1
     
     def display_uploads(self):
+        self.t2_retrieve_button.config(state='disabled')
         self.t2_generation_lock=1
         count = 0
         display = 99
@@ -214,6 +223,7 @@ class windowMaker:
         self.finishedFirstGeneration=1
 
     def display_soundvids(self):
+        self.t3_retrieve_button.config(state='disabled')
         self.t3_generation_lock=1
         count = 0
         display = 99
@@ -530,7 +540,7 @@ class windowMaker:
             #print("End of list")
             print("End of list")
             return
-
+        
         #print(self.user_liked_list[0])
         #print(self.user_liked_list[0]['video'])
         #print("Hmm: ",self.user_liked_list[self.t1_index]['video']['originCover'])
@@ -647,45 +657,50 @@ class windowMaker:
             self.t3_col=0
             self.t3_row+=1
 
+    def kill_display_thread(self):
+        print("trying..")
+        self.display_likes_continue=0
+
     def get_liked_list(self):
         self.clear_canvas()
         self.username = self.t1_retrieve_bar.get()
         self.last_username = self.username
         
 
-        if os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.displayChunk)):
-            #print("Back up detected")
+        if self.var5.get() == 1 and os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.displayChunk)):
             
             self.user_liked_list=[]
             with open('cachedpulls/{}_likes_backup.json'.format(self.username)) as file:
                 self.user_liked_list=json.load(file)
                     
-            print("Length on json: ",len(self.user_liked_list))
+            #print("Length on json: ",len(self.user_liked_list))
             if len(self.user_liked_list) >= self.displayChunk:
                 self.t1_index = 0
                 self.lastQuery=self.username
+                print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
                 self.t1_display_button()
                 return
         
-
         if self.t1_sort_mode==0: #0 - normal
             self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-        
-        if self.t1_sort_mode==1: #1 normal reversed
+            print("here")
+        elif self.t1_sort_mode==1: #1 normal reversed
             self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             self.user_liked_list=list(reversed(self.user_liked_list))
 
-        if self.t1_sort_mode==2: #2 by views - reversed
+        elif self.t1_sort_mode==2: #2 by views - reversed
             #print("Sorted by views descending")
             self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             self.user_liked_list = sorted(self.user_liked_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
         
-        if self.t1_sort_mode==3: #3 by views - ascending
+        elif self.t1_sort_mode==3: #3 by views - ascending
             #print("sorted by views ascending")
             self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             self.user_liked_list = sorted(self.user_liked_list,key=lambda item: int(item['stats']['playCount']))
-        
-        
+    
+        if len(self.user_liked_list)==0:
+            print("TikTok has blocked the retrieval. Try again and make sure your likes are public")
+            return
 
         print("Retrieved {} of your likes".format(len(self.user_liked_list)))
         #self.updateTextbox("Likes Retrieved!")
@@ -711,7 +726,8 @@ class windowMaker:
             if len(self.user_post_list) >= self.displayChunk:
                 self.t2_index = 0
                 self.lastQuery=self.username
-                self.t2_display_button()
+                print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
+                self.t2_display_button()                
                 return
         
         
@@ -1014,6 +1030,10 @@ class windowMaker:
         with open('cachedpulls/{}_post_backup.json'.format(self.username),'w') as f:
                 #print(self.deleted_list)
                 json.dump(self.user_post_list,f)
+    
+    def myscrollsetter(self,x0,x1): #overrides how the scrollbar value is changed to be easier to handle
+        self.ybar.set(x0,x1)
+        print("Scrollbar: {} {}".format(x0,x1))
         
     def createWindow(self):
         #Main Window Setup
@@ -1035,8 +1055,8 @@ package ifneeded awdark 7.12 \
         s.configure('flat.TButton',relief='flat')
 
         self.root.title("Github.com/DeeFrancois")
-        self.root.geometry("824x609") #598
-        self.root.minsize(824,609) #598
+        self.root.geometry("824x615") #598
+        self.root.minsize(824,615) #598
         self.root.resizable(False,True)
         self.root.bind('<Escape>',self.close)
         self.root.protocol("WM_DELETE_WINDOW",self.on_closing_main)
@@ -1072,6 +1092,7 @@ package ifneeded awdark 7.12 \
         self.var2 = tk.IntVar()
         self.var3 = tk.IntVar()
         self.var4 = tk.IntVar()
+        self.var5 = tk.IntVar()
         self.t1_sort_var = tk.IntVar()
         self.t2_sort_var = tk.IntVar()
         self.t3_sort_var = tk.IntVar()
@@ -1083,7 +1104,7 @@ package ifneeded awdark 7.12 \
         self.bottom_control_box.grid_columnconfigure(0,weight=1)
 
         self.bottom_text_feed = tk.Text(self.mainFrame, height=1,font=("TkDefaultFont",10))
-        #sys.stdout.write = self.stdout_redirector
+        sys.stdout.write = self.stdout_redirector
         
         self.checkBoxFrame =ttk.Frame(self.bottom_control_box)
         
@@ -1104,7 +1125,12 @@ package ifneeded awdark 7.12 \
         self.check_proxy = ttk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
         self.check_proxy.grid(row=0,column=5,padx=5)
         self.button_cache_likes = ttk.Button(self.checkBoxFrame,text="Backup Likes",command=self.backup_likes)
-        self.button_cache_likes.grid(row=0,column=6,padx=6)
+        self.button_cache_likes.grid(row=0,column=7,padx=6)
+        self.check_use_cached = ttk.Checkbutton(self.checkBoxFrame,text="Use Cached Lists",variable=self.var5,onvalue=1,offvalue=0)
+        self.check_use_cached.grid(row=0,column=6,padx=6)
+
+        self.kill_switch=ttk.Button(self.checkBoxFrame,text="KILL SWITCH",command=self.kill_display_thread)
+        self.kill_switch.grid(row=0,column=8)
 
         self.checkBoxFrame.grid(row=0,column=0) #use to be 348
 
@@ -1158,8 +1184,9 @@ package ifneeded awdark 7.12 \
         self.canvas.pack(padx=0,pady=2, expand=True,fill='y')
         #T1 Scroll Bar
         self.ybar=ttk.Scrollbar(self.frame_canvas,orient="vertical",command=self.canvas.yview)
+        
         self.ybar.grid(column=1,row=0,sticky='ns')
-        self.canvas.configure(yscrollcommand=self.ybar.set)
+        self.canvas.configure(yscrollcommand=self.myscrollsetter)
 
         #Canvas inside Scrollable Frame
         self.frame_buttons=ttk.Frame(self.canvas)
@@ -1388,6 +1415,7 @@ package ifneeded awdark 7.12 \
         
         #Enter Default preferences and stuff
         self.var1.set(1)
+        self.var5.set(1)
         self.openLibrary()
         self.t1_retrieve_bar.insert(0,'dee_learns_norsk') #Later on use txt file
         self.t2_retrieve_bar.insert(0,'username')
