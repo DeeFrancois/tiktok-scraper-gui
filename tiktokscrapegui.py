@@ -62,7 +62,6 @@ class windowMaker:
         self.currTab = 0
         self.library=0
         self.list_of_lists=[]
-        self.lastQuery="Nothing"
         self.firstRun=1
         
         self.watermark_flag=0
@@ -81,6 +80,9 @@ class windowMaker:
         self.t1_generation_lock=0
         self.t2_generation_lock=0
         self.t3_generation_lock=0
+        self.t1_generated=0
+        self.t2_generated=0
+        self.t3_generated=0
 
         self.t1_sort_mode=0
         self.t2_sort_mode=0
@@ -155,21 +157,21 @@ class windowMaker:
             #print(y)
             if ((y >= .96 and tab=="Your Likes") or (y2 >= .96 and tab=="User Posts") or (y3 >= .96 and tab=="Videos By Sound")) and self.finishedFirstGeneration==1 and self.generationLock==0:
             #print("End of scrollbar, display more")
-                if tab == "Your Likes" and self.t1_generation_lock==0:
+                if tab == "Your Likes" and self.t1_generation_lock==0 and self.t1_generated:
                     self.generationLock=1
                     self.clear_canvas()
                     self.t1_images.clear()
                     self.display_likes()
                     self.generationLock=0
                     
-                elif tab == "User Posts" and self.t2_generation_lock==0:
+                elif tab == "User Posts" and self.t2_generation_lock==0 and self.t2_generated:
                     self.generationLock=1
                     self.clear_canvas()
                     self.t2_images.clear()
                     self.display_uploads()
                     self.generationLock=0
 
-                elif tab == "Videos By Sound" and self.t3_generation_lock==0:
+                elif tab == "Videos By Sound" and self.t3_generation_lock==0 and self.t3_generated:
                     self.generationLock=1
                     self.clear_canvas()
                     self.t3_images.clear()
@@ -199,6 +201,7 @@ class windowMaker:
         self.t1_retrieve_button.config(text='Retrieve TikToks')
         self.t1_retrieve_button.config(command=self.get_liked_list)
         self.t1_generation_lock=0
+        self.t1_generated=1
 
         self.finishedFirstGeneration=1
         
@@ -226,12 +229,13 @@ class windowMaker:
         self.t2_retrieve_button.config(text='Retrieve TikToks')
         self.t2_retrieve_button.config(command=self.get_user_uploads) 
         self.t2_generation_lock=0
+        self.t2_generated=1
 
         self.finishedFirstGeneration=1
 
     def display_soundvids(self):
-        self.t2_retrieve_button.config(text='Stop Generation')
-        self.t2_retrieve_button.config(command=self.kill_display_sounds_thread)
+        self.t3_retrieve_button.config(text='Stop Generation')
+        self.t3_retrieve_button.config(command=self.kill_display_sounds_thread)
 
         self.t3_generation_lock=1
         count = 0
@@ -252,6 +256,7 @@ class windowMaker:
         self.t3_retrieve_button.config(command=self.get_sound_videos)
 
         self.t3_generation_lock=0
+        self.t3_generated=1
         self.finishedFirstGeneration=1
 
     def add_scroll_buffer(self,tab):
@@ -710,7 +715,6 @@ class windowMaker:
             #print("Length on json: ",len(self.user_liked_list))
             if len(self.user_liked_list) >= self.displayChunk:
                 self.t1_index = 0
-                self.lastQuery=self.username
                 self.user_liked_list=self.sort_list(self.t1_sort_mode,self.user_liked_list)
                 print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
                 self.t1_display_button()
@@ -726,8 +730,8 @@ class windowMaker:
         print("Retrieved {} of your likes".format(len(self.user_liked_list)))
         #self.updateTextbox("Likes Retrieved!")
         self.t1_index=0
-        self.lastQuery=self.username
         self.t1_display_button()
+        self.backup_likes()
 
     def get_user_uploads(self):
         print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds to pull 500 videos")
@@ -746,31 +750,19 @@ class windowMaker:
             print("Length on json: ",len(self.user_post_list))
             if len(self.user_post_list) >= self.displayChunk:
                 self.t2_index = 0
-                self.lastQuery=self.username
+                self.user_post_list=self.sort_list(self.t2_sort_mode,self.user_post_list)
                 print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
                 self.t2_display_button()                
                 return
         
         
-        if self.t2_sort_mode==0: #0 - normal
-            self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-        
-        if self.t2_sort_mode==1: #1 normal reversed
-            self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-            self.user_post_list=list(reversed(self.user_post_list))
+        self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+        self.user_post_list = self.sort_list(self.t2_sort_mode,self.user_post_list)
 
-        if self.t2_sort_mode==2: #2 by views - reversed
-            self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-            self.user_post_list = sorted(self.user_post_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
-        
-        if self.t2_sort_mode==3: #3 by views - ascending
-            self.user_post_list = self.api.by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-            self.user_post_list = sorted(self.user_post_list,key=lambda item: int(item['stats']['playCount']))
-        
         print("Retrieved {} tiktoks by uploads".format(len(self.user_post_list)))
         self.t2_index=0
-        self.lastQuery=self.username
         self.t2_display_button()
+        self.backup_posts()
     
     def clear_canvas(self):
         tab = self.tc.tab(self.tc.select(),"text")
@@ -834,6 +826,24 @@ class windowMaker:
         self.clear_canvas()
         if(str(box).isdigit()):
             self.soundID=box
+
+            self.clear_canvas()
+
+            if os.path.isfile('cachedpulls/{}_sound_backup.json'.format(self.soundID)):
+                #print("Back up detected")
+                
+                self.by_sound_list=[]
+                with open('cachedpulls/{}_sound_backup.json'.format(self.soundID)) as file:
+                    self.by_sound_list=json.load(file)
+                        
+                print("Length on json: ",len(self.by_sound_list))
+                if len(self.by_sound_list) >= self.displayChunk:
+                    self.t3_index = 0
+                    self.by_sound_list=self.sort_list(self.t3_sort_mode,self.by_sound_list)
+                    print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
+                    self.t3_display_button()                
+                    return
+
         else:
             self.search_sounds(box)
             return
@@ -841,30 +851,16 @@ class windowMaker:
             #self.soundID=self.api.search_for_music(self.t3_retrieve_bar.get(),count=1)[0]['music']['id']
 
         #self.clear_canvas()
-        print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds")
-        
-        if self.t3_sort_mode==0: #0 - normal
-            self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
-        
-        if self.t3_sort_mode==1: #1 normal reversed
-            self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
-            self.by_sound_list=list(reversed(self.by_sound_list))
-
-        if self.t3_sort_mode==2: #2 by views - reversed
-            #print("Sorted by views descending")
-            self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
-            self.by_sound_list = sorted(self.by_sound_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
-        
-        if self.t3_sort_mode==3: #3 by views - ascending
-            #print("sorted by views ascending")
-            self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
-            self.by_sound_list = sorted(self.by_sound_list,key=lambda item: int(item['stats']['playCount']))
         
         
+        self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
+        self.by_sound_list = self.sort_list(self.t3_sort_mode,self.by_sound_list)
+    
         print("Retrieved {} tiktoks by sound".format(len(self.by_sound_list)))
+
         self.t3_index=0
-        self.lastQuery=self.username
         self.t3_display_button()
+        self.backup_sound()
 
     def link_callback(self,event): #Opens browsers on link click
         url=self.detailsLineOne.get("1.0",tk.END)
@@ -1043,14 +1039,18 @@ class windowMaker:
         self.bottom_text_feed.insert(tk.END,inputstr)
         #self.bottom_text_feed
         #self.bottom_text_feed.see()
+
     def backup_likes(self):
         with open('cachedpulls/{}_likes_backup.json'.format(self.username),'w') as f:
-                #print(self.deleted_list)
                 json.dump(self.user_liked_list,f)
+
     def backup_posts(self):
         with open('cachedpulls/{}_post_backup.json'.format(self.username),'w') as f:
-                #print(self.deleted_list)
                 json.dump(self.user_post_list,f)
+
+    def backup_sound(self):
+        with open('cachedpulls/{}_sound_backup.json'.format(self.soundID),'w') as f:
+                json.dump(self.by_sound_list,f)
     
     def myscrollsetter(self,x0,x1): #overrides how the scrollbar value is changed to be easier to handle
         self.ybar.set(x0,x1)
