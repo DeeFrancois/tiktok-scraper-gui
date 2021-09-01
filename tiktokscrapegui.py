@@ -118,12 +118,7 @@ class windowMaker:
                 self.t3canvas.yview_scroll(int(-1*(event.delta/100)), "units")
     
     def update(self):
-        if self.t1_generation_lock==0:
-            self.t1_retrieve_button.config(state='enabled')
-        if self.t2_generation_lock==0:
-            self.t2_retrieve_button.config(state='enabled')
-        if self.t3_generation_lock==0:
-            self.t3_retrieve_button.config(state='enabled')
+
         #Scroll bar updates
         if self.display_chunk_entry.get()!=self.displayChunk:
             self.displayChunk=int(self.display_chunk_entry.get())
@@ -185,7 +180,9 @@ class windowMaker:
         self.modified=1
     
     def display_likes(self):
-        self.t1_retrieve_button.config(state='disabled')
+        self.t1_retrieve_button.config(text='Stop Generation')
+        self.t1_retrieve_button.config(command=self.kill_display_likes_thread)
+        
         self.t1_generation_lock=1
         count = 0
         display = 99
@@ -199,15 +196,21 @@ class windowMaker:
             if count == 1:
                 self.get_details(0)
         self.add_scroll_buffer("Your Likes")
+        self.t1_retrieve_button.config(text='Retrieve TikToks')
+        self.t1_retrieve_button.config(command=self.get_liked_list)
         self.t1_generation_lock=0
 
         self.finishedFirstGeneration=1
+        
     
     def display_uploads(self):
-        self.t2_retrieve_button.config(state='disabled')
+        self.t2_retrieve_button.config(text='Stop Generation')
+        self.t2_retrieve_button.config(command=self.kill_display_uploads_thread)
+
         self.t2_generation_lock=1
         count = 0
         display = 99
+        self.display_uploads_continue = 1
         while count < display:
             count += 1
             try:
@@ -218,15 +221,22 @@ class windowMaker:
                 self.get_details(0)
 
         self.add_scroll_buffer("User Posts")
+        
+
+        self.t2_retrieve_button.config(text='Retrieve TikToks')
+        self.t2_retrieve_button.config(command=self.get_user_uploads) 
         self.t2_generation_lock=0
 
         self.finishedFirstGeneration=1
 
     def display_soundvids(self):
-        self.t3_retrieve_button.config(state='disabled')
+        self.t2_retrieve_button.config(text='Stop Generation')
+        self.t2_retrieve_button.config(command=self.kill_display_sounds_thread)
+
         self.t3_generation_lock=1
         count = 0
         display = 99
+        self.display_sounds_continue=1
         while count < display:
             count += 1
             try:
@@ -237,6 +247,10 @@ class windowMaker:
                 self.get_details(0)
 
         self.add_scroll_buffer("Videos By Sound")
+
+        self.t3_retrieve_button.config(text='Retrieve TikToks')
+        self.t3_retrieve_button.config(command=self.get_sound_videos)
+
         self.t3_generation_lock=0
         self.finishedFirstGeneration=1
 
@@ -657,15 +671,35 @@ class windowMaker:
             self.t3_col=0
             self.t3_row+=1
 
-    def kill_display_thread(self):
-        print("trying..")
+    def kill_display_likes_thread(self):
+        #print("trying..")
         self.display_likes_continue=0
+    
+    def kill_display_uploads_thread(self):
+        #print("trying..")
+        self.display_uploads_continue=0
+    
+    def kill_display_sounds_thread(self):
+        #print("trying..")
+        self.display_sounds_continue=0
+
+    def sort_list(self,sort_mode,input_list):
+
+        if sort_mode==0: #0 - normal
+            return input_list
+        if sort_mode==1: #1 normal reversed
+            return list(reversed(input_list))
+
+        if sort_mode==2: #2 by views - reversed
+            return sorted(input_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
+        
+        if sort_mode==3: #3 by views - ascending
+            return sorted(input_list,key=lambda item: int(item['stats']['playCount']))
 
     def get_liked_list(self):
         self.clear_canvas()
         self.username = self.t1_retrieve_bar.get()
         self.last_username = self.username
-        
 
         if self.var5.get() == 1 and os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.displayChunk)):
             
@@ -677,27 +711,14 @@ class windowMaker:
             if len(self.user_liked_list) >= self.displayChunk:
                 self.t1_index = 0
                 self.lastQuery=self.username
+                self.user_liked_list=self.sort_list(self.t1_sort_mode,self.user_liked_list)
                 print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
                 self.t1_display_button()
                 return
         
-        if self.t1_sort_mode==0: #0 - normal
-            self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-            print("here")
-        elif self.t1_sort_mode==1: #1 normal reversed
-            self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-            self.user_liked_list=list(reversed(self.user_liked_list))
-
-        elif self.t1_sort_mode==2: #2 by views - reversed
-            #print("Sorted by views descending")
-            self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-            self.user_liked_list = sorted(self.user_liked_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
+        self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
+        self.sort_list(self.t1_sort_mode,self.user_liked_list)
         
-        elif self.t1_sort_mode==3: #3 by views - ascending
-            #print("sorted by views ascending")
-            self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-            self.user_liked_list = sorted(self.user_liked_list,key=lambda item: int(item['stats']['playCount']))
-    
         if len(self.user_liked_list)==0:
             print("TikTok has blocked the retrieval. Try again and make sure your likes are public")
             return
@@ -1033,7 +1054,7 @@ class windowMaker:
     
     def myscrollsetter(self,x0,x1): #overrides how the scrollbar value is changed to be easier to handle
         self.ybar.set(x0,x1)
-        print("Scrollbar: {} {}".format(x0,x1))
+        #print("Scrollbar: {} {}".format(x0,x1))
         
     def createWindow(self):
         #Main Window Setup
@@ -1129,9 +1150,6 @@ package ifneeded awdark 7.12 \
         self.check_use_cached = ttk.Checkbutton(self.checkBoxFrame,text="Use Cached Lists",variable=self.var5,onvalue=1,offvalue=0)
         self.check_use_cached.grid(row=0,column=6,padx=6)
 
-        self.kill_switch=ttk.Button(self.checkBoxFrame,text="KILL SWITCH",command=self.kill_display_thread)
-        self.kill_switch.grid(row=0,column=8)
-
         self.checkBoxFrame.grid(row=0,column=0) #use to be 348
 
         self.bottom_text_feed.pack(expand=False,fill='x',anchor='s')
@@ -1156,7 +1174,7 @@ package ifneeded awdark 7.12 \
 
         self.t1_retrieve_bar.grid(row=0,column=1)
 
-        self.t1_retrieve_button =ttk.Button(self.headerButtonFrame, text="Get TikToks",command=self.download_button)
+        self.t1_retrieve_button =ttk.Button(self.headerButtonFrame, text="Retrieve TikToks",command=self.download_button)
 
         self.t1_retrieve_button.grid(row=0,column=2,columnspan=2) #2,3
         
@@ -1218,7 +1236,7 @@ package ifneeded awdark 7.12 \
         self.t2_retrieve_bar = ttk.Entry(self.t2_headerButtonFrame)
         self.t2_retrieve_bar.grid(row=0,column=1)
 
-        self.t2_retrieve_button =ttk.Button(self.t2_headerButtonFrame, text="Get TikToks",command=self.get_user_uploads)
+        self.t2_retrieve_button =ttk.Button(self.t2_headerButtonFrame, text="Retrieve TikToks",command=self.get_user_uploads)
         self.t2_retrieve_button.grid(row=0,column=2,columnspan=2)
         
         self.t2_download_last_frame =ttk.Frame(self.t2_headerButtonFrame)
@@ -1276,7 +1294,7 @@ package ifneeded awdark 7.12 \
         self.t3_retrieve_bar = ttk.Entry(self.t3_headerButtonFrame,width=15)
         self.t3_retrieve_bar.grid(row=0,column=1)
 
-        self.t3_retrieve_button =ttk.Button(self.t3_headerButtonFrame, text="Get TikToks",command=self.get_sound_videos)
+        self.t3_retrieve_button =ttk.Button(self.t3_headerButtonFrame, text="Retrieve TikToks",command=self.get_sound_videos)
         self.t3_retrieve_button.grid(row=0,column=2,columnspan=2)
         
         self.t3_download_last_frame =ttk.Frame(self.t3_headerButtonFrame)
