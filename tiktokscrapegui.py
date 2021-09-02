@@ -7,7 +7,10 @@
 # Note: Cached Lists only last a day since the links are not permament (could be less than a day but haven't tested to find exact duration)
 # wtf is causing the performance dips???? Mostly noticeable through slow-downs during the display_likes process
 # Downloading through the tiktok api works now but I don't think it's faster than ytdl, can add toggle to choose which to use later
-
+# 
+# TODO: Bookmark list for usernames/hashtags/etc, avatar button opens tiktok in web, line for social link if the api can get it, remove "backup list"
+# remove the list length check when using cache since it can be triggered by a pull unmaxxed pull (force to use cache unless you uncheck the option, maybe autocheck after pull? idk figure out a better system)
+# thread the previews as well, add trending tab
 import os
 import queue
 import random
@@ -43,9 +46,13 @@ class windowMaker:
         self.t1_row = 0
         self.t2_row = 0
         self.t3_row = 0
+        self.t4_row=0
+
         self.t1_col = 0
         self.t2_col = 0
         self.t3_col = 0
+        self.t4_col=0
+
         self.player_open=0
         self.modified = 0
         self.update_flag=0
@@ -54,6 +61,7 @@ class windowMaker:
         self.t1_index = 0
         self.t2_index = 0
         self.t3_index = 0
+        self.t4_index= 0
         self.userChange=1
         self.img=[]
         self.btn=[]
@@ -73,22 +81,28 @@ class windowMaker:
         self.t1_button_dict={}
         self.t2_button_dict={}
         self.t3_button_dict={}
+        self.t4_button_dict={}
         self.t1_download_list=[]
         self.t2_download_list=[]
         self.t3_download_list=[]
+        self.t4_download_list=[]
         self.t1_images=[]
         self.t2_images=[]
         self.t3_images=[]
+        self.t4_images=[]
         self.t1_generation_lock=0
         self.t2_generation_lock=0
         self.t3_generation_lock=0
+        self.t4_generation_lock=0
         self.t1_generated=0
         self.t2_generated=0
         self.t3_generated=0
+        self.t4_generated=0
 
         self.t1_sort_mode=0
         self.t2_sort_mode=0
         self.t3_sort_mode=0
+        self.t4_sort_mode=0
 
         self.msg_queue=queue.Queue()
         self.download_queue=queue.Queue()
@@ -113,22 +127,26 @@ class windowMaker:
         else:
             #Get active tab
             tab = self.tc.tab(self.tc.select(),"text")
-
+            #print(event.widget)
             if(tab=='Your Likes'):
                 self.canvas.yview_scroll(int(-1*(event.delta/100)), "units")
             elif(tab=="User Posts"):
                 self.t2canvas.yview_scroll(int(-1*(event.delta/100)), "units")
             elif(tab=="Videos By Sound"):
                 self.t3canvas.yview_scroll(int(-1*(event.delta/100)), "units")
+            elif(tab=="Videos By Hashtag"):
+                self.t4canvas.yview_scroll(int(-1*(event.delta/100)), "units")
     
     def update(self):
 
         #Scroll bar updates
         if self.display_chunk_entry.get()!=self.displayChunk:
             self.displayChunk=int(self.display_chunk_entry.get())
+        
         self.canvas.config(scrollregion=self.canvas.bbox('all'))
         self.t2canvas.config(scrollregion=self.t2canvas.bbox('all'))
         self.t3canvas.config(scrollregion=self.t3canvas.bbox('all'))
+        self.t4canvas.config(scrollregion=self.t4canvas.bbox('all'))
 
         if(self.player_open==1):
             self.app.canvas.config(scrollregion=self.app.canvas.bbox('all'))
@@ -145,7 +163,7 @@ class windowMaker:
             pass
 
         #Check scroll positions
-        self.root.after(1,self.update)
+        self.root.after(100,self.update)
 
     def scrollGenerationTrigger(self):
 
@@ -154,10 +172,11 @@ class windowMaker:
             x,y = self.ybar.get()
             x,y2 = self.t2ybar.get()
             x,y3 = self.t3ybar.get()
+            x,y4 = self.t4ybar.get()
             tab = self.tc.tab(self.tc.select(),"text")
             #print("Y: ",y," TAB 2 Y: ",y2, " TAB 3 Y: ", y3)
             #print(y)
-            if ((y >= .96 and tab=="Your Likes") or (y2 >= .96 and tab=="User Posts") or (y3 >= .96 and tab=="Videos By Sound")) and self.finishedFirstGeneration==1 and self.generationLock==0:
+            if ((y >= .96 and tab=="Your Likes") or (y2 >= .96 and tab=="User Posts") or (y3 >= .96 and tab=="Videos By Sound") or (y4 >= .96 and tab=="Videos By Hashtag")) and self.finishedFirstGeneration==1 and self.generationLock==0:
             #print("End of scrollbar, display more")
                 if tab == "Your Likes" and self.t1_generation_lock==0 and self.t1_generated:
                     self.generationLock=1
@@ -178,6 +197,13 @@ class windowMaker:
                     self.clear_canvas()
                     self.t3_images.clear()
                     self.display_soundvids()
+                    self.generationLock=0
+                
+                elif tab == "Videos By Hashtag" and self.t4_generation_lock==0 and self.t4_generated:
+                    self.generationLock=1
+                    self.clear_canvas()
+                    self.t4_images.clear()
+                    self.display_hashtagvids()
                     self.generationLock=0
 
     def modify(self):
@@ -216,7 +242,7 @@ class windowMaker:
         count = 0
         display = 99
         self.display_uploads_continue = 1
-        while count < display:
+        while count < display and self.display_uploads_continue:
             count += 1
             try:
                 self.t2_display_a_tiktok()
@@ -243,7 +269,7 @@ class windowMaker:
         count = 0
         display = 99
         self.display_sounds_continue=1
-        while count < display:
+        while count < display and self.display_sounds_continue:
             count += 1
             try:
                 self.t3_display_a_tiktok()
@@ -259,6 +285,33 @@ class windowMaker:
 
         self.t3_generation_lock=0
         self.t3_generated=1
+        self.finishedFirstGeneration=1
+    
+    def display_hashtagvids(self):
+        self.t4_retrieve_button.config(text='Stop Generation')
+        self.t4_retrieve_button.config(command=self.kill_display_hashtag_thread)
+
+        self.t4_generation_lock=1
+        count = 0
+        display = 99
+        self.display_hashtag_continue = 1
+        while count < display and self.display_hashtag_continue:
+            count += 1
+            try:
+                self.t4_display_a_tiktok()
+            except:
+                pass
+            #if count == 1:
+                #self.get_details(0)
+
+        self.add_scroll_buffer("Videos By Hashtag")
+        
+
+        self.t4_retrieve_button.config(text='Retrieve TikToks')
+        self.t4_retrieve_button.config(command=self.get_hashtag_list) 
+        self.t4_generation_lock=0
+        self.t4_generated=1
+
         self.finishedFirstGeneration=1
 
     def add_scroll_buffer(self,tab):
@@ -284,6 +337,12 @@ class windowMaker:
                 self.t3_images.append(photo)
                 thisBtn=tk.Button(self.t3frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center')
                 thisBtn.grid(row=self.t3_row+1,column=i)
+        
+        elif(tab == "Videos By Hashtag"):
+            for i in range(0,3):
+                self.t4_images.append(photo)
+                thisBtn=tk.Button(self.t4frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center')
+                thisBtn.grid(row=self.t4_row+1,column=i)
 
     def get_active_tab(self):
         tab = self.tc.tab(self.tc.select(),"text")
@@ -293,6 +352,8 @@ class windowMaker:
             theList = self.user_post_list
         elif(tab == "Videos By Sound"):
             theList = self.by_sound_list
+        elif(tab == "Videos By Hashtag"):
+            theList = self.by_hashtag_list
         
         return theList
     
@@ -304,6 +365,8 @@ class windowMaker:
             phrase = self.t2_retrieve_bar.get()
         elif(tab == "Videos By Sound"):
             phrase = self.t3_retrieve_bar.get()
+        elif(tab == "Videos By Hashtag"):
+            phrase = self.t4_retrieve_bar.get()
         
         return phrase
 
@@ -316,8 +379,11 @@ class windowMaker:
             phrase = self.t2_download_last_bar.get()
         elif(tab == "Videos By Sound"):
             phrase = self.t3_download_last_bar.get()
+        elif(tab == "Videos By Hashtag"):
+            phrase = self.t4_download_last_bar.get()
         
         return phrase
+
     def download_stop(self):
         self.continue_download=0
 
@@ -353,6 +419,17 @@ class windowMaker:
 
             if self.var3.get()==1:
                 dl_list = self.t3_download_list
+                count = len(dl_list)
+                from_select = 1
+            else:
+                count = int(self.get_active_tab_downloadlast_bar()) - 1
+        
+        elif(tab == "Videos By Hashtag"):
+            theList = self.by_hashtag_list
+            start_button = self.t4_download_start_button
+
+            if self.var3.get()==1:
+                dl_list = self.t4_download_list
                 count = len(dl_list)
                 from_select = 1
             else:
@@ -403,9 +480,13 @@ class windowMaker:
         for index in self.t3_download_list:
             self.t3_button_dict[index].config(text='')
         
+        for index in self.t4_download_list:
+            self.t4_button_dict[index].config(text='')
+        
         self.t1_download_list.clear()
         self.t2_download_list.clear()
         self.t3_download_list.clear()
+        self.t4_download_list.clear()
 
     def single_download_or_select(self,link,unique_id,ind):
 
@@ -438,6 +519,14 @@ class windowMaker:
                     self.t3_download_list.remove(ind)
                     self.t3_button_dict[ind].config(text='')
             
+            if (tab == "Videos By Hashtag"): 
+                if self.t4_button_dict[ind].cget('text') == '':
+                    self.t4_download_list.append(ind)
+                    self.t4_button_dict[ind].config(text='☑')
+                else:
+                    self.t4_download_list.remove(ind)
+                    self.t4_button_dict[ind].config(text='')
+            
             #self.updateTextbox("{0} TikToks Selected".format(str(len(self.download_list))))
 
         else: #Download
@@ -462,6 +551,11 @@ class windowMaker:
     
     def t3_display_button(self):
         t1= threading.Thread(target=self.display_soundvids)
+        t1.daemon=True
+        t1.start()
+    
+    def t4_display_button(self):
+        t1= threading.Thread(target=self.display_hashtagvids)
         t1.daemon=True
         t1.start()
     
@@ -499,6 +593,13 @@ class windowMaker:
             sound_ID = self.by_sound_list[index]['music']['id']
             bio = self.by_sound_list[index]['author']['signature']
             avatarLink = self.by_sound_list[index]['author']['avatarThumb']
+        elif(tab == "Videos By Hashtag"):
+            author = '@'+ self.by_hashtag_list[index]['author']['uniqueId']
+            nick = self.by_hashtag_list[index]['author']['nickname']
+            sound_title = "Sound: "+self.by_hashtag_list[index]['music']['title']
+            sound_ID = self.by_hashtag_list[index]['music']['id']
+            bio = self.by_hashtag_list[index]['author']['signature']
+            avatarLink = self.by_hashtag_list[index]['author']['avatarThumb']
 
         self.detailsLineOne.delete("1.0",tk.END)
         self.detailsLineOne.insert(tk.END,author)
@@ -548,6 +649,8 @@ class windowMaker:
             current_button = self.t2_button_dict[button_id]
         elif(tab==3):
             current_button = self.t3_button_dict[button_id]
+        elif(tab==4):
+            current_button = self.t4_button_dict[button_id]
 
         
         ydl_opts = {'outtmpl':'{0}/temp.mp4'.format(self.cwd)}
@@ -686,6 +789,46 @@ class windowMaker:
         if(self.t3_col%3==0):
             self.t3_col=0
             self.t3_row+=1
+    
+    def t4_display_a_tiktok(self):
+        if self.t4_index == len(self.by_hashtag_list):
+            #print("End of list")
+            return
+        img_url = self.by_hashtag_list[self.t4_index]['video']['originCover']
+        author = self.by_hashtag_list[self.t4_index]['author']['uniqueId']
+        download_url = self.by_hashtag_list[self.t4_index]['video']['downloadAddr']
+        uniqueID = self.by_hashtag_list[self.t4_index]['id']
+        like_count = str(self.by_hashtag_list[self.t4_index]['stats']['playCount']/1000) + 'K Views'
+        ind = self.t4_index
+
+        #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
+        normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
+
+        #Create Thumbnail
+        size = (260,462)
+        urllib.request.urlretrieve(img_url,'{0}/thumbs/t4_like.jpg'.format(self.cwd))
+        img = Image.open('{0}/thumbs/t4_like.jpg'.format(self.cwd))
+        img.thumbnail(size)
+        draw = ImageDraw.Draw(img)
+        draw.text((5,450),like_count,(255,255,255))
+
+        photo = ImageTk.PhotoImage(img)
+        self.t4_images.append(photo)
+
+        thisBtn=tk.Button(self.t4frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,uniqueID,ind))
+        thisBtn.grid(row=self.t4_row,column=self.t4_col)
+        
+        thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,normalUrl,4))
+        thisBtn.bind("<Button-2>",lambda e: self.get_details(ind))
+
+        self.t4_button_dict[ind]=thisBtn
+        self.t4_index+=1
+        self.t4_col+=1
+        if(self.t4_col%3==0):
+            self.t4_col=0
+            self.t4_row+=1
+
+
 
     def kill_display_likes_thread(self):
         #print("trying..")
@@ -698,6 +841,10 @@ class windowMaker:
     def kill_display_sounds_thread(self):
         #print("trying..")
         self.display_sounds_continue=0
+    
+    def kill_display_hashtag_thread(self):
+        #print("trying..")
+        self.display_hashtag_continue=0
 
     def sort_list(self,sort_mode,input_list):
 
@@ -774,63 +921,6 @@ class windowMaker:
         self.t2_index=0
         self.t2_display_button()
         self.backup_posts()
-    
-    def clear_canvas(self):
-        tab = self.tc.tab(self.tc.select(),"text")
-        if (tab == "Your Likes"):
-            theWidgetList = self.canvas.winfo_children()
-
-            for tiktok in theWidgetList:
-                if tiktok.winfo_children():
-                    theWidgetList.extend(tiktok.winfo_children()) 
-            for tiktok in theWidgetList:
-                tiktok.grid_forget()
-            
-            self.t1_row=0
-            self.t1_col=0
-        
-        if (tab == "User Posts"):
-            theWidgetList = self.t2canvas.winfo_children()
-
-            for tiktok in theWidgetList:
-                if tiktok.winfo_children():
-                    theWidgetList.extend(tiktok.winfo_children()) 
-            for tiktok in theWidgetList:
-                tiktok.grid_forget()
-            
-            self.t2_row=0
-            self.t2_col=0
-
-        if (tab == "Videos By Sound"):
-            theWidgetList = self.t3canvas.winfo_children()
-
-            for tiktok in theWidgetList:
-                if tiktok.winfo_children():
-                    theWidgetList.extend(tiktok.winfo_children()) 
-            for tiktok in theWidgetList:
-                tiktok.grid_forget()
-            
-            self.t3_row=0
-            self.t3_col=0
-
-    def search_sounds(self,query):
-        self.clear_canvas()
-        top_sounds = self.api.search_for_music(self.t3_retrieve_bar.get(),count=6)
-        img = Image.open('{0}/thumbs/default/blank.jpg'.format(self.cwd))
-        img.thumbnail((260,462))
-        photo = ImageTk.PhotoImage(img)
-        self.t3_images.append(photo)
-        list_index = 0
-        for j in range(0,2):
-            for i in range(0,3):
-                current = top_sounds[list_index]['music']['title']
-                soundID = top_sounds[list_index]['music']['id']
-                #urllib.request.urlretrieve(current,'{}/sounds/sound{}.mp3'.format(self.cwd,i))
-                #print("current)
-                thisBtn=tk.Button(self.t3frame_buttons,height=461,width=261,image=photo,compound='center',pady=1,padx=1,text=current, command=lambda a = soundID: self.updateSoundBox(soundID))
-                thisBtn.grid(row=j,column=i)
-                list_index+=1
-            
 
     def get_sound_videos(self):
         box = self.t3_retrieve_bar.get()
@@ -872,6 +962,113 @@ class windowMaker:
         self.t3_index=0
         self.t3_display_button()
         self.backup_sound()
+    
+    def get_hashtag_list(self):
+        self.clear_canvas()
+        self.username = '#'+self.t4_retrieve_bar.get()
+        if '##' in self.username:
+            self.username=self.username.replace('##','#')
+            
+        self.last_username = self.username
+
+        if self.var5.get() == 1 and os.path.isfile('cachedpulls/{}_hashtag_backup.json'.format(self.username,self.displayChunk)):
+            
+            self.by_hashtag_list=[]
+            with open('cachedpulls/{}_hashtag_backup.json'.format(self.username)) as file:
+                self.by_hashtag_list=json.load(file)
+                    
+            #print("Length on json: ",len(self.by_hashtag_list))
+            if len(self.by_hashtag_list) >= self.displayChunk:
+                self.t4_index = 0
+                self.by_hashtag_list=self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
+                print("Retrieved {} tiktoks from cache. Uncheck 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_hashtag_list)))
+                self.t4_display_button()
+                return
+        
+        self.by_hashtag_list = self.api.by_hashtag(hashtag=self.username,count=self.displayChunk,custom_did=self.did)
+        self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
+        
+        if len(self.by_hashtag_list)==0:
+            print("TikTok has blocked the retrieval. Maybe try again?")
+            return
+
+        print("Retrieved {} of your hashtag".format(len(self.by_hashtag_list)))
+        #self.updateTextbox("Likes Retrieved!")
+        self.t4_index=0
+        self.t4_display_button()
+        self.backup_hashtag()
+
+
+    def search_sounds(self,query):
+        self.clear_canvas()
+        top_sounds = self.api.search_for_music(self.t3_retrieve_bar.get(),count=6)
+        img = Image.open('{0}/thumbs/default/blank.jpg'.format(self.cwd))
+        img.thumbnail((260,462))
+        photo = ImageTk.PhotoImage(img)
+        self.t3_images.append(photo)
+        list_index = 0
+        for j in range(0,2):
+            for i in range(0,3):
+                current = top_sounds[list_index]['music']['title']
+                soundID = top_sounds[list_index]['music']['id']
+                #urllib.request.urlretrieve(current,'{}/sounds/sound{}.mp3'.format(self.cwd,i))
+                #print("current)
+                thisBtn=tk.Button(self.t3frame_buttons,height=461,width=261,image=photo,compound='center',pady=1,padx=1,text=current, command=lambda a = soundID: self.updateSoundBox(soundID))
+                thisBtn.grid(row=j,column=i)
+                list_index+=1
+            
+
+    
+    
+    def clear_canvas(self):
+        tab = self.tc.tab(self.tc.select(),"text")
+        if (tab == "Your Likes"):
+            theWidgetList = self.canvas.winfo_children()
+
+            for tiktok in theWidgetList:
+                if tiktok.winfo_children():
+                    theWidgetList.extend(tiktok.winfo_children()) 
+            for tiktok in theWidgetList:
+                tiktok.grid_forget()
+            
+            self.t1_row=0
+            self.t1_col=0
+        
+        elif (tab == "User Posts"):
+            theWidgetList = self.t2canvas.winfo_children()
+
+            for tiktok in theWidgetList:
+                if tiktok.winfo_children():
+                    theWidgetList.extend(tiktok.winfo_children()) 
+            for tiktok in theWidgetList:
+                tiktok.grid_forget()
+            
+            self.t2_row=0
+            self.t2_col=0
+
+        elif (tab == "Videos By Sound"):
+            theWidgetList = self.t3canvas.winfo_children()
+
+            for tiktok in theWidgetList:
+                if tiktok.winfo_children():
+                    theWidgetList.extend(tiktok.winfo_children()) 
+            for tiktok in theWidgetList:
+                tiktok.grid_forget()
+            
+            self.t3_row=0
+            self.t3_col=0
+        
+        elif (tab == "Videos By Hashtag"):
+            theWidgetList = self.t4canvas.winfo_children()
+
+            for tiktok in theWidgetList:
+                if tiktok.winfo_children():
+                    theWidgetList.extend(tiktok.winfo_children()) 
+            for tiktok in theWidgetList:
+                tiktok.grid_forget()
+            
+            self.t4_row=0
+            self.t4_col=0
 
     def link_callback(self,event): #Opens browsers on link click
         url=self.detailsLineOne.get("1.0",tk.END)
@@ -919,6 +1116,7 @@ class windowMaker:
             self.app = videoPlayer(self.win2)
             self.player_open=1
             self.app.root.protocol("WM_DELETE_WINDOW",self.on_closing)
+
         elif(self.player_open==1):
 
             self.close_player()
@@ -932,6 +1130,7 @@ class windowMaker:
 
         self.player_open=0
         self.var2.set(0)
+
     def close(self,event): #ESC
         try:
             os.remove('temp.mp4')
@@ -980,6 +1179,10 @@ class windowMaker:
             self.t3_download_last_label.config(text='Download Last(Max 500): ')
             self.t3_download_last_bar.config(state='normal')
             self.t3_download_start_button.config(command=threading.Thread(target=self.download_last).start)
+
+            self.t4_download_last_label.config(text='Download Last(Max 500): ')
+            self.t4_download_last_bar.config(state='normal')
+            self.t4_download_start_button.config(command=threading.Thread(target=self.download_last).start)
         else:
 
             self.t1_download_last_label.config(text='Download Last(Max 500): ')
@@ -993,6 +1196,10 @@ class windowMaker:
             self.t3_download_last_label.config(text='Download Last(Max 500): ')
             self.t3_download_last_bar.config(state='disabled')
             self.t3_download_start_button.config(command=threading.Thread(target=self.download_last).start)
+
+            self.t4_download_last_label.config(text='Download Last(Max 500): ')
+            self.t4_download_last_bar.config(state='disabled')
+            self.t4_download_start_button.config(command=threading.Thread(target=self.download_last).start)
 
 
     def create_folders(self):
@@ -1044,6 +1251,19 @@ class windowMaker:
         else:
             self.t3_sort_mode=0
             self.t3_sort_selector_button.config(text="Sort - Recent") #Default 
+
+    def t4_select_sort_mode(self): #0 = No sort, 1 = Sort Views Descending, 2= sort views ascending, 3=Date OldDescending
+        self.t4_sort_mode+=1
+        if self.t4_sort_mode == 1:
+            self.t4_sort_selector_button.config(text="Sort - Oldest")
+        elif self.t4_sort_mode == 2:
+            self.t4_sort_selector_button.config(text="Sort - Views Descending")
+        elif self.t4_sort_mode == 3:
+            self.t4_sort_selector_button.config(text="Sort - Views Ascending") #Oldest First
+        else:
+            self.t4_sort_mode=0
+            self.t4_sort_selector_button.config(text="Sort - Recent") #Default 
+
     def stdout_redirector(self,inputstr):
         #print("Sending text to bottom: ",inputstr)
         self.bottom_text_feed.see(tk.END)
@@ -1062,6 +1282,10 @@ class windowMaker:
     def backup_sound(self):
         with open('cachedpulls/{}_sound_backup.json'.format(self.soundID),'w') as f:
                 json.dump(self.by_sound_list,f)
+    
+    def backup_hashtag(self):
+        with open('cachedpulls/{}_hashtag_backup.json'.format(self.username),'w') as f:
+                json.dump(self.by_hashtag_list,f)
     
     def myscrollsetter(self,x0,x1): #overrides how the scrollbar value is changed to be easier to handle
         self.ybar.set(x0,x1)
@@ -1106,10 +1330,12 @@ package ifneeded awdark 7.12 \
         self.t1 = ttk.Frame(self.tc)
         self.t2 = ttk.Frame(self.tc)
         self.t3 = ttk.Frame(self.tc)
+        self.t4 = ttk.Frame(self.tc)
 
         self.tc.add(self.t1,text='Your Likes') #Tab One
         self.tc.add(self.t2,text='User Posts')   #Tab Two
         self.tc.add(self.t3,text="Videos By Sound") #Tab Three
+        self.tc.add(self.t4,text="Videos By Hashtag") #Tab Three
         self.tc.pack(expand=True,fill='y',pady=10)
         
         #self.control_button=ttk.Button(self.control_box,width=10,text="THIS IS A TEST")
@@ -1118,6 +1344,7 @@ package ifneeded awdark 7.12 \
         self.t1.bind("<Visibility>",self.tab_switch) #Eventually utilize this so dont have to keep doing tab=tk.select("text") or whatever
         self.t2.bind("<Visibility>",self.tab_switch)
         self.t3.bind("<Visibility>",self.tab_switch)
+        self.t4.bind("<Visibility>",self.tab_switch)
 
         ###
         self.var1 = tk.IntVar()
@@ -1128,6 +1355,7 @@ package ifneeded awdark 7.12 \
         self.t1_sort_var = tk.IntVar()
         self.t2_sort_var = tk.IntVar()
         self.t3_sort_var = tk.IntVar()
+        self.t4_sort_var = tk.IntVar()
 
 
 
@@ -1346,6 +1574,61 @@ package ifneeded awdark 7.12 \
 
 
         #####################################################################################
+        ####################################################################################
+                #Tab Four - By Hashtag
+
+        self.t4_headerButtonFrame =ttk.Frame(self.t4)
+        self.t4_headerButtonFrame.pack(pady=5,expand=False,fill='x',anchor='w')
+        
+        for i in range(0,8):
+            self.t4_headerButtonFrame.grid_columnconfigure(i,weight=1)
+        
+        var4 = tk.StringVar()
+        
+        self.t4_retrieve_bar_label = ttk.Label(self.t4_headerButtonFrame,textvariable=var4)
+        var4.set("Enter Hashtag: ")
+        self.t4_retrieve_bar_label.grid(row=0,column=0)
+        self.t4_retrieve_bar = ttk.Entry(self.t4_headerButtonFrame)
+        self.t4_retrieve_bar.grid(row=0,column=1)
+
+        self.t4_retrieve_button =ttk.Button(self.t4_headerButtonFrame, text="Retrieve TikToks",command=self.get_hashtag_list)
+        self.t4_retrieve_button.grid(row=0,column=2,columnspan=2)
+        
+        self.t4_download_last_frame =ttk.Frame(self.t4_headerButtonFrame)
+        self.t4_download_last_frame.grid(row=0,column=5,columnspan=2)
+        self.t4_download_last_label = ttk.Label(self.t4_download_last_frame, state='disabled', text="Download Last(Max 500): ")
+        self.t4_download_last_label.grid(row=0,column=0)
+        self.t4_download_last_bar = ttk.Entry(self.t4_download_last_frame, state='disabled', width=5)
+        self.t4_download_last_bar.grid(row=0,column=1)
+
+        self.t4_download_start_button=ttk.Button(self.t4_headerButtonFrame, state='disabled', text="Start Downloads",command=threading.Thread(target=self.download_last).start)
+        self.t4_download_start_button.grid(row=0,column=7)
+
+        self.t4_sort_selector_button = ttk.Button(self.t4_headerButtonFrame,text="Sort - Recent",command=self.t4_select_sort_mode)
+        self.t4_sort_selector_button.grid(row=0,column=4)
+
+        #Scrollable Frame
+        self.t4frame_canvas =ttk.Frame(self.t4)
+        self.t4frame_canvas.grid_rowconfigure(0,weight=1)
+        self.t4frame_canvas.grid_columnconfigure(0,weight=1)
+        self.t4frame_canvas.grid_propagate(False)
+        self.t4frame_canvas.pack(expand=True,fill='y',anchor='w')
+        self.t4canvas = tk.Canvas(self.t4frame_canvas, bg="black",bd=0,highlightthickness=0,width=813,height=463)
+        self.t4canvas.pack(padx=0,pady=2, expand=True,fill='y')
+        #T1 Scroll Bar
+        self.t4ybar=ttk.Scrollbar(self.t4frame_canvas,orient="vertical",command=self.t4canvas.yview)
+        self.t4ybar.grid(column=1,row=0,sticky='ns')
+        self.t4canvas.configure(yscrollcommand=self.t4ybar.set)
+
+        #Canvas inside Scrollable Frame
+        self.t4frame_buttons=ttk.Frame(self.t4canvas)
+        self.t4canvas.create_window((0,0),window=self.t4frame_buttons,anchor='nw')
+        
+
+        self.t4canvas.config(scrollregion=self.t4canvas.bbox('all'))
+
+        #self.t4canvas.bind_all("<MouseWheel>",self.on_mousewheel)
+        self.t4canvas.yview_moveto('0')
         #Bottom Feed - Might be unnecessary
         #self.textFeed = tk.Text(self.mainFrame,pady=5)
         #self.textFeed.pack(expand=False,pady=5)
