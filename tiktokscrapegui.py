@@ -441,8 +441,8 @@ class windowMaker:
             #self.updateTextbox("{0} TikToks Selected".format(str(len(self.download_list))))
 
         else: #Download
-            #self.download_queue.put((link,unique_id))
-            self.test_download_without_ytdl(link,unique_id)
+            self.download_queue.put((link,unique_id))
+            #self.test_download_without_ytdl(link,unique_id)
     
     def test_download_without_ytdl(self,link,unique_id):
         #verifyFp = "verify_kst2zk4o_Eb8C43pd_mnu3_4Vhc_ACNi_3KKX3Zc9dUNA"
