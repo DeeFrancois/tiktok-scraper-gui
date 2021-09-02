@@ -5,6 +5,7 @@
 
 # Need to eventually figure out why this hangs sometimes during display_likes process sometimes
 # Note: Cached Lists only last a day since the links are not permament (could be less than a day but haven't tested to find exact duration)
+# wtf is causing the performance dips???? Mostly noticeable through slow-downs during the display_likes process
 
 import os
 import queue
@@ -143,7 +144,7 @@ class windowMaker:
             pass
 
         #Check scroll positions
-        self.root.after(500,self.update)
+        self.root.after(1,self.update)
 
     def scrollGenerationTrigger(self):
 
@@ -195,8 +196,8 @@ class windowMaker:
                 self.t1_display_a_tiktok()
             except:
                 pass
-            if count == 1:
-                self.get_details(0)
+            #if count == 1:
+                #self.get_details(0)
         self.add_scroll_buffer("Your Likes")
         self.t1_retrieve_button.config(text='Retrieve TikToks')
         self.t1_retrieve_button.config(command=self.get_liked_list)
@@ -220,8 +221,8 @@ class windowMaker:
                 self.t2_display_a_tiktok()
             except:
                 pass
-            if count == 1:
-                self.get_details(0)
+            #if count == 1:
+                #self.get_details(0)
 
         self.add_scroll_buffer("User Posts")
         
@@ -247,8 +248,8 @@ class windowMaker:
                 self.t3_display_a_tiktok()
             except:
                 pass
-            if count == 1:
-                self.get_details(0)
+            #if count == 1:
+                #self.get_details(0)
 
         self.add_scroll_buffer("Videos By Sound")
 
@@ -815,7 +816,7 @@ class windowMaker:
                 current = top_sounds[list_index]['music']['title']
                 soundID = top_sounds[list_index]['music']['id']
                 #urllib.request.urlretrieve(current,'{}/sounds/sound{}.mp3'.format(self.cwd,i))
-                #print(current)
+                #print("current)
                 thisBtn=tk.Button(self.t3frame_buttons,height=461,width=261,image=photo,compound='center',pady=1,padx=1,text=current, command=lambda a = soundID: self.updateSoundBox(soundID))
                 thisBtn.grid(row=j,column=i)
                 list_index+=1
@@ -840,7 +841,7 @@ class windowMaker:
                 if len(self.by_sound_list) >= self.displayChunk:
                     self.t3_index = 0
                     self.by_sound_list=self.sort_list(self.t3_sort_mode,self.by_sound_list)
-                    print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
+                    print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_sound_list)))
                     self.t3_display_button()                
                     return
 
@@ -852,7 +853,7 @@ class windowMaker:
 
         #self.clear_canvas()
         
-        
+        print("SOUND ID ",self.soundID)
         self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
         self.by_sound_list = self.sort_list(self.t3_sort_mode,self.by_sound_list)
     
