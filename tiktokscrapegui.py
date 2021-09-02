@@ -6,6 +6,7 @@
 # Need to eventually figure out why this hangs sometimes during display_likes process sometimes
 # Note: Cached Lists only last a day since the links are not permament (could be less than a day but haven't tested to find exact duration)
 # wtf is causing the performance dips???? Mostly noticeable through slow-downs during the display_likes process
+# Downloading through the tiktok api works now but I don't think it's faster than ytdl, can add toggle to choose which to use later
 
 import os
 import queue
@@ -440,7 +441,14 @@ class windowMaker:
             #self.updateTextbox("{0} TikToks Selected".format(str(len(self.download_list))))
 
         else: #Download
-            self.download_queue.put((link,unique_id))
+            #self.download_queue.put((link,unique_id))
+            self.test_download_without_ytdl(link,unique_id)
+    
+    def test_download_without_ytdl(self,link,unique_id):
+        #verifyFp = "verify_kst2zk4o_Eb8C43pd_mnu3_4Vhc_ACNi_3KKX3Zc9dUNA"
+        video_bytes = self.api.get_video_by_url(link,custom_device_id=self.verifyFp)
+        with open("{}.mp4".format(unique_id),"wb") as out:
+            out.write(video_bytes)
 
     def t1_display_button(self):
         t1 = threading.Thread(target=self.display_likes)
@@ -541,6 +549,7 @@ class windowMaker:
         elif(tab==3):
             current_button = self.t3_button_dict[button_id]
 
+        
         ydl_opts = {'outtmpl':'{0}/temp.mp4'.format(self.cwd)}
 
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -551,6 +560,7 @@ class windowMaker:
         
         #self.player = mpv.MPV(input_default_bindings=True,wid=current_button.winfo_id())
         #self.player.loop_playlist='inf'
+        #self.test_download_without_ytdl(link,'temp')
         self.player.wid=current_button.winfo_id()
         self.player.play('temp.mp4')
 
@@ -1625,7 +1635,7 @@ class DownloaderThread(threading.Thread):
         threading.Thread.__init__(self)
         self.msg_queue = msg_queue
         self.dl_queue = dl_queue
-    
+
     def download(self,link,unique_id):
         cwd = os.getcwd()
         ydl_opts = {'outtmpl':'{0}/downloads/{1}.%(ext)s'.format(cwd,unique_id)}
