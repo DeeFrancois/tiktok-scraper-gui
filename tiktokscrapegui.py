@@ -1072,7 +1072,7 @@ class windowMaker:
             self.t4_row=0
             self.t4_col=0
 
-    def link_callback(self,event): #Opens browsers on link click
+    def link_callback(self): #Opens browsers on link click
         url=self.detailsLineOne.get("1.0",tk.END)
         if '@' in url:
             url = 'https://www.tiktok.com/' + url
@@ -1325,7 +1325,6 @@ class windowMaker:
             if self.entry_user_bookmark.get():
                 val = self.entry_user_bookmark.get()
             else:
-                print("Empty")
                 return
 
         if side == 0:
@@ -1343,17 +1342,17 @@ class windowMaker:
         if side == 0:
             current_listing = ttk.Frame(self.bookmark_user_frame_buttons)
             current_listing.pack(fill='x')
-            current_button=ttk.Button(current_listing,text=val,command=lambda x=val: self.fill_bar(x,1),width=50)
-            current_button.pack(side=tk.LEFT)
-            delete_button = ttk.Button(current_listing,text='x',command=lambda x=current_button,y=val,z=side:self.delete_listing(x,y,z))
+            current_button=ttk.Button(current_listing,text=val,command=lambda x=val: self.fill_bar(x,1),width=39)
+            current_button.pack(side=tk.LEFT,expand=True,anchor='w')
+            delete_button = ttk.Button(current_listing,text='x',command=lambda x=current_button,y=val,z=side:self.delete_listing(x,y,z),width=4)
             delete_button.pack(side=tk.RIGHT)
 
         if side == 1:
             current_listing = ttk.Frame(self.bookmark_sound_frame_buttons)
             current_listing.pack(fill='x')
-            current_button=ttk.Button(current_listing,text=val,command=lambda x=val: self.fill_bar(x,3),width=50)
-            current_button.pack(side=tk.LEFT)
-            delete_button = ttk.Button(current_listing,text='x',command=lambda x=current_button,y=val,z=side:self.delete_listing(x,y,z))
+            current_button=ttk.Button(current_listing,text=val,command=lambda x=val: self.fill_bar(x,3),width=39)
+            current_button.pack(side=tk.LEFT,expand=True,anchor='nw')
+            delete_button = ttk.Button(current_listing,text='x',command=lambda x=current_button,y=val,z=side:self.delete_listing(x,y,z),width=4)
             delete_button.pack(side=tk.RIGHT)
 
     def populate_bookmarks(self):
@@ -1732,10 +1731,10 @@ package ifneeded awdark 7.12 \
         #self.detailsLineOne.config(fg='blue')
         self.detailsLineOne.insert(tk.INSERT,"Click here to open in browser")
         self.detailsLineOne.config(wrap='none',width=35)
-        self.detailsLineOne.bind("<Button-1>",self.link_callback)
+        #self.detailsLineOne.bind("<Button-1>",self.link_callback)
         
 
-        self.detailsAvatar =ttk.Button(self.detailsFrame, text="Avatar")
+        self.detailsAvatar =ttk.Button(self.detailsFrame, text="Avatar",command=self.link_callback)
         self.detailsAvatar.grid(row=1,column=0)
 
         self.detailsLineTwo = tk.Text(self.detailsFrame, height=1,pady=5,font=("TkDefaultFont",10))
@@ -1780,7 +1779,7 @@ package ifneeded awdark 7.12 \
         self.bookmark_frame_canvas.grid_columnconfigure(0,weight=1)
         self.bookmark_frame_canvas.grid_propagate(False)
         self.bookmark_frame_canvas.pack(expand=True,fill='y')
-        self.bookmark_user_canvas = tk.Canvas(self.bookmark_frame_canvas, bd=0, highlightthickness=0,bg="black")
+        self.bookmark_user_canvas = tk.Canvas(self.bookmark_frame_canvas, bd=0, highlightthickness=0,bg="black",width=300)
         self.bookmark_user_canvas.pack(expand=True,fill='y')
         #T1 Scroll Bar
         self.bookmark_user_ybar=ttk.Scrollbar(self.bookmark_frame_canvas,orient="vertical",command=self.bookmark_user_canvas.yview)
@@ -1795,10 +1794,13 @@ package ifneeded awdark 7.12 \
         self.bookmark_user_canvas.config(scrollregion=self.bookmark_user_canvas.bbox('all'))
 
         self.new_userbookmark_frame = ttk.Frame(self.bookmark_user_frame_buttons)
-        self.entry_user_bookmark = ttk.Entry(self.new_userbookmark_frame,width=53)
-        self.entry_user_bookmark.pack(side=tk.LEFT)
-        self.button_new_user_bookmark = ttk.Button(self.new_userbookmark_frame,text='+',command=lambda a="new",b=0:self.add_new_bookmark(a,b),width=3)
-        self.button_new_user_bookmark.pack(side=tk.LEFT)
+        for i in range(0,2):
+            self.new_userbookmark_frame.grid_columnconfigure(1,weight=1)
+
+        self.entry_user_bookmark = ttk.Entry(self.new_userbookmark_frame,width=40)
+        self.entry_user_bookmark.grid(row=0,column=1,padx=2)
+        self.button_new_user_bookmark = ttk.Button(self.new_userbookmark_frame,text='+',command=lambda a="new",b=0:self.add_new_bookmark(a,b),width=2)
+        self.button_new_user_bookmark.grid(row=0,column=0)
         self.new_userbookmark_frame.pack(fill='x')
         
         self.populate_bookmarks()
@@ -1819,7 +1821,7 @@ package ifneeded awdark 7.12 \
         self.bookmark_sound_frame_canvas.grid_columnconfigure(0,weight=1)
         self.bookmark_sound_frame_canvas.grid_propagate(False)
         self.bookmark_sound_frame_canvas.pack(expand=True,fill='y')
-        self.bookmark_sound_canvas = tk.Canvas(self.bookmark_sound_frame_canvas, bd=0, highlightthickness=0,bg="black")
+        self.bookmark_sound_canvas = tk.Canvas(self.bookmark_sound_frame_canvas, bd=0, highlightthickness=0,bg="black",width=300)
         self.bookmark_sound_canvas.pack(expand=True,fill='y')
         #T1 Scroll Bar
         self.bookmark_sound_ybar=ttk.Scrollbar(self.bookmark_sound_frame_canvas,orient="vertical",command=self.bookmark_sound_canvas.yview)
@@ -1833,6 +1835,16 @@ package ifneeded awdark 7.12 \
 
         self.bookmark_sound_canvas.config(scrollregion=self.bookmark_sound_canvas.bbox('all'))
 
+        self.new_soundbookmark_frame = ttk.Frame(self.bookmark_sound_frame_buttons)
+
+        self.new_soundbookmark_frame.grid_columnconfigure(1,weight=1)
+
+
+        self.entry_sound_bookmark = ttk.Entry(self.new_soundbookmark_frame,width=40)
+        self.entry_sound_bookmark.grid(row=0,column=1,padx=2)
+        self.button_new_sound_bookmark = ttk.Button(self.new_soundbookmark_frame,text='+',command=lambda a="new",b=1:self.add_new_bookmark(a,b),width=2)
+        self.button_new_sound_bookmark.grid(row=0,column=0)
+        self.new_soundbookmark_frame.pack(fill='x')
         ###
 
 
