@@ -26,6 +26,7 @@ import playsound
 from pathlib import Path
 from tkinter import ttk
 
+
 import cv2
 import mpv
 import PIL.ImageGrab
@@ -35,6 +36,7 @@ from PIL import Image, ImageDraw, ImageTk
 from TikTokApi import TikTokApi
 import webbrowser
 import json
+import shutil
 #UNcomment when using pyinstaller for --noconsole (but playwright console still opens unfortunately..)
 #sys.stderr=open('log.txt','w')
 #sys.stdout=open('log.txt','w')
@@ -1290,6 +1292,77 @@ class windowMaker:
     def myscrollsetter(self,x0,x1): #overrides how the scrollbar value is changed to be easier to handle
         self.ybar.set(x0,x1)
         #print("Scrollbar: {} {}".format(x0,x1))
+
+
+    def fill_bar(self,val,bar):
+        if bar == 1:
+            self.t2_retrieve_bar.delete(0,tk.END)
+            self.t2_retrieve_bar.insert(tk.END,val)
+            self.tc.select(1)
+        elif bar == 3:
+            self.t3_retrieve_bar.delete(0,tk.END)
+            self.t3_retrieve_bar.insert(tk.END,val) 
+            self.tc.select(3)
+
+    def delete_listing(self,current_button,bookmark_string,side):
+        current_button.master.destroy()
+        if side == 0:
+            print("Removing: ",bookmark_string)
+            with open('cachedpulls/user_bookmarks.txt') as fin, open('cachedpulls/user_bookmarks_new.txt', 'wt') as fout:
+                list(fout.write(line) for line in fin if line.rstrip() != bookmark_string) 
+
+            shutil.move('cachedpulls/user_bookmarks_new.txt','cachedpulls/user_bookmarks.txt')
+
+        elif side == 1:
+            print("Removing: ",bookmark_string)
+            with open('cachedpulls/sound_bookmarks.txt') as fin, open('cachedpulls/sound_bookmarks_new.txt', 'wt') as fout:
+                list(fout.write(line) for line in fin if line.rstrip() != bookmark_string) 
+
+            shutil.move('cachedpulls/sound_bookmarks_new.txt','cachedpulls/sound_bookmarks.txt')
+
+    def add_new_bookmark(self,val,side):
+        if val == "new":
+            if self.entry_user_bookmark.get():
+                val = self.entry_user_bookmark.get()
+            else:
+                print("Empty")
+                return
+
+        if side == 0:
+            with open ('cachedpulls/user_bookmarks.txt','a') as f:
+                f.write('\n'+val)
+            self.create_listing(val,side)
+
+        elif side == 1:
+            with open ('cachedpulls/sound_bookmarks.txt','a') as f:
+                f.write(val)
+            self.create_listing(val,side)
+
+    def create_listing(self,val,side):
+        #print(val)
+        if side == 0:
+            current_listing = ttk.Frame(self.bookmark_user_frame_buttons)
+            current_listing.pack(fill='x')
+            current_button=ttk.Button(current_listing,text=val,command=lambda x=val: self.fill_bar(x,1),width=50)
+            current_button.pack(side=tk.LEFT)
+            delete_button = ttk.Button(current_listing,text='x',command=lambda x=current_button,y=val,z=side:self.delete_listing(x,y,z))
+            delete_button.pack(side=tk.RIGHT)
+
+        if side == 1:
+            current_listing = ttk.Frame(self.bookmark_sound_frame_buttons)
+            current_listing.pack(fill='x')
+            current_button=ttk.Button(current_listing,text=val,command=lambda x=val: self.fill_bar(x,3),width=50)
+            current_button.pack(side=tk.LEFT)
+            delete_button = ttk.Button(current_listing,text='x',command=lambda x=current_button,y=val,z=side:self.delete_listing(x,y,z))
+            delete_button.pack(side=tk.RIGHT)
+
+    def populate_bookmarks(self):
+        with open('cachedpulls/user_bookmarks.txt','r') as f:
+            for line in f:
+                self.create_listing(line.replace("\n",''),0)
+        with open('cachedpulls/sound_bookmarks.txt','r') as f:
+            for line in f:
+                self.create_listing(line.replace("\n",''),1)
         
     def createWindow(self):
         #Main Window Setup
@@ -1331,11 +1404,13 @@ package ifneeded awdark 7.12 \
         self.t2 = ttk.Frame(self.tc)
         self.t3 = ttk.Frame(self.tc)
         self.t4 = ttk.Frame(self.tc)
+        self.tab_bookmarks = ttk.Frame(self.tc)
 
         self.tc.add(self.t1,text='Your Likes') #Tab One
         self.tc.add(self.t2,text='User Posts')   #Tab Two
         self.tc.add(self.t3,text="Videos By Sound") #Tab Three
         self.tc.add(self.t4,text="Videos By Hashtag") #Tab Three
+        self.tc.add(self.tab_bookmarks,text="Bookmarks")
         self.tc.pack(expand=True,fill='y',pady=10)
         
         #self.control_button=ttk.Button(self.control_box,width=10,text="THIS IS A TEST")
@@ -1345,6 +1420,7 @@ package ifneeded awdark 7.12 \
         self.t2.bind("<Visibility>",self.tab_switch)
         self.t3.bind("<Visibility>",self.tab_switch)
         self.t4.bind("<Visibility>",self.tab_switch)
+        self.tab_bookmarks.bind("<Visibility>",self.tab_switch)
 
         ###
         self.var1 = tk.IntVar()
@@ -1364,7 +1440,7 @@ package ifneeded awdark 7.12 \
         self.bottom_control_box.grid_columnconfigure(0,weight=1)
 
         self.bottom_text_feed = tk.Text(self.mainFrame, height=1,font=("TkDefaultFont",10))
-        sys.stdout.write = self.stdout_redirector
+        #sys.stdout.write = self.stdout_redirector
         
         self.checkBoxFrame =ttk.Frame(self.bottom_control_box)
         
@@ -1384,8 +1460,6 @@ package ifneeded awdark 7.12 \
         self.check_selection.grid(row=0,column=4,padx=5)
         self.check_proxy = ttk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
         self.check_proxy.grid(row=0,column=5,padx=5)
-        self.button_cache_likes = ttk.Button(self.checkBoxFrame,text="Backup Likes",command=self.backup_likes)
-        self.button_cache_likes.grid(row=0,column=7,padx=6)
         self.check_use_cached = ttk.Checkbutton(self.checkBoxFrame,text="Use Cached Lists",variable=self.var5,onvalue=1,offvalue=0)
         self.check_use_cached.grid(row=0,column=6,padx=6)
 
@@ -1686,6 +1760,83 @@ package ifneeded awdark 7.12 \
 
         ####################################################
 
+        
+        
+        for i in range(0,4):
+            self.tab_bookmarks.grid_columnconfigure(i,weight=1)
+        
+        self.tab_bookmarks.grid_rowconfigure(0,weight=1)
+        #self.tab_bookmarks.grid_propagate(False)
+        
+        self.username_bookmark_frame = ttk.Frame(self.tab_bookmarks)
+        self.username_bookmark_frame.grid(row=0,column=1,sticky='ns')
+
+        self.label_userbookmarks=ttk.Label(self.username_bookmark_frame,text="Saved Usernames")
+        self.label_userbookmarks.pack()
+
+        ##
+        self.bookmark_frame_canvas = ttk.Frame(self.username_bookmark_frame)
+        self.bookmark_frame_canvas.grid_rowconfigure(0,weight=1)
+        self.bookmark_frame_canvas.grid_columnconfigure(0,weight=1)
+        self.bookmark_frame_canvas.grid_propagate(False)
+        self.bookmark_frame_canvas.pack(expand=True,fill='y')
+        self.bookmark_user_canvas = tk.Canvas(self.bookmark_frame_canvas, bd=0, highlightthickness=0,bg="black")
+        self.bookmark_user_canvas.pack(expand=True,fill='y')
+        #T1 Scroll Bar
+        self.bookmark_user_ybar=ttk.Scrollbar(self.bookmark_frame_canvas,orient="vertical",command=self.bookmark_user_canvas.yview)
+        self.bookmark_user_ybar.grid(column=1,row=0,sticky='ns')
+        self.bookmark_user_canvas.configure(yscrollcommand=self.bookmark_user_ybar.set)
+
+        #bookmark_user_canvas inside Scrollable Frame
+        self.bookmark_user_frame_buttons=ttk.Frame(self.bookmark_user_canvas)
+        self.bookmark_user_canvas.create_window((0,0),window=self.bookmark_user_frame_buttons,anchor='nw')
+        
+
+        self.bookmark_user_canvas.config(scrollregion=self.bookmark_user_canvas.bbox('all'))
+
+        self.new_userbookmark_frame = ttk.Frame(self.bookmark_user_frame_buttons)
+        self.entry_user_bookmark = ttk.Entry(self.new_userbookmark_frame,width=53)
+        self.entry_user_bookmark.pack(side=tk.LEFT)
+        self.button_new_user_bookmark = ttk.Button(self.new_userbookmark_frame,text='+',command=lambda a="new",b=0:self.add_new_bookmark(a,b),width=3)
+        self.button_new_user_bookmark.pack(side=tk.LEFT)
+        self.new_userbookmark_frame.pack(fill='x')
+        
+        self.populate_bookmarks()
+
+        ###
+        
+        
+        
+        self.sound_id_bookmark_frame=ttk.Frame(self.tab_bookmarks)
+        self.sound_id_bookmark_frame.grid(row=0,column=2,sticky='ns')
+        
+        self.label_soundbookmarks = ttk.Label(self.sound_id_bookmark_frame,text="Saved Sounds")
+        self.label_soundbookmarks.pack()
+
+         ##
+        self.bookmark_sound_frame_canvas = ttk.Frame(self.sound_id_bookmark_frame)
+        self.bookmark_sound_frame_canvas.grid_rowconfigure(0,weight=1)
+        self.bookmark_sound_frame_canvas.grid_columnconfigure(0,weight=1)
+        self.bookmark_sound_frame_canvas.grid_propagate(False)
+        self.bookmark_sound_frame_canvas.pack(expand=True,fill='y')
+        self.bookmark_sound_canvas = tk.Canvas(self.bookmark_sound_frame_canvas, bd=0, highlightthickness=0,bg="black")
+        self.bookmark_sound_canvas.pack(expand=True,fill='y')
+        #T1 Scroll Bar
+        self.bookmark_sound_ybar=ttk.Scrollbar(self.bookmark_sound_frame_canvas,orient="vertical",command=self.bookmark_sound_canvas.yview)
+        self.bookmark_sound_ybar.grid(column=1,row=0,sticky='ns')
+        self.bookmark_sound_canvas.configure(yscrollcommand=self.bookmark_sound_ybar.set)
+
+        #bookmark_sound_canvas inside Scrollable Frame
+        self.bookmark_sound_frame_buttons=ttk.Frame(self.bookmark_sound_canvas)
+        self.bookmark_sound_canvas.create_window((0,0),window=self.bookmark_sound_frame_buttons,anchor='nw')
+        
+
+        self.bookmark_sound_canvas.config(scrollregion=self.bookmark_sound_canvas.bbox('all'))
+
+        ###
+
+
+        
         #self.your_library_frame =ttk.Frame(self.root,width=300)
         #self.your_library_frame.pack(side='left',fill='y',expand=False)
         #One tiktok wide, infinite scroll, able to play on click
