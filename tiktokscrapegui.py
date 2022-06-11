@@ -15,6 +15,9 @@
 #3/29/22 WIth TIkTokApi 5.0 we need to use likedlist['as_dict']['id'] to get info rather than likedlist['id'], but when I cache it I can no longer use "['as_dict']"
 #so instead I can just use the cached list for the first load and do likedlist['as_dict']['id']
 # TODO: apply previous line thing to the other retrieval methods as well
+
+#6/6/2022 - TikTokApi seems to have been discontinued. Will have to find a way to produce a list myself so I can atleast create a demo for it
+
 from enum import unique
 import os
 import queue
@@ -62,11 +65,13 @@ class windowMaker:
         self.t2_row = 0
         self.t3_row = 0
         self.t4_row=0
+        self.t5_row=0
 
         self.t1_col = 0
         self.t2_col = 0
         self.t3_col = 0
         self.t4_col=0
+        self.t5_col=0
 
         self.player_open=0
         self.modified = 0
@@ -77,12 +82,14 @@ class windowMaker:
         self.t2_index = 0
         self.t3_index = 0
         self.t4_index= 0
+        self.t5_index = 0
+
         self.userChange=1
         self.img=[]
         self.btn=[]
         self.finishedFirstGeneration=0
         self.generationLock=0
-        self.displayChunk=50 #198 last, 500 is good
+        self.displayChunk=30 #198 last, 500 is good #LOCKED due to api bug limiting pulls to recent 30
         self.secondListFlag=0
         self.currTab = 0
         self.library=0
@@ -97,27 +104,33 @@ class windowMaker:
         self.t2_button_dict={}
         self.t3_button_dict={}
         self.t4_button_dict={}
+        self.t5_button_dict={}
         self.t1_download_list=[]
         self.t2_download_list=[]
         self.t3_download_list=[]
         self.t4_download_list=[]
+        self.t5_download_list=[]
         self.t1_images=[]
         self.t2_images=[]
         self.t3_images=[]
         self.t4_images=[]
+        self.t5_images=[]
         self.t1_generation_lock=0
         self.t2_generation_lock=0
         self.t3_generation_lock=0
         self.t4_generation_lock=0
+        self.t5_generation_lock=0
         self.t1_generated=0
         self.t2_generated=0
         self.t3_generated=0
         self.t4_generated=0
+        self.t5_generated=0
 
         self.t1_sort_mode=0
         self.t2_sort_mode=0
         self.t3_sort_mode=0
         self.t4_sort_mode=0
+        self.t5_sort_mode=0
 
         self.msg_queue=queue.Queue()
         self.download_queue=queue.Queue()
@@ -126,11 +139,28 @@ class windowMaker:
         self.last_played = ''
         self.player = mpv.MPV(input_default_bindings=True,reset_on_next_file="pause",input_vo_keyboard=True)
 
-        #self.verifyFp = "verify_kwijimsq_GkzMZshh_Ubg5_4tJe_BYZq_ahqUZQOgwGR6"
-        #self.api = TikTokApi.get_instance(custom_verifyFp=self.verifyFp,use_test_endpoints=True)
-        #self.did = ''.join(random.choice(string.digits) for num in range(19))
-        self.api = TikTokApi()
         
+
+        with open('cookies.json') as f:
+            cookies = json.load(f)
+
+        cookies_kv = {}
+        for cookie in cookies:
+            cookies_kv[cookie['name']] = cookie['value']
+
+
+        self.cookies = cookies_kv
+
+        self.api = TikTokApi()
+
+        self.api._get_cookies = self.get_cookies  # getting cookies at this stage doesnt work when using self.api later on, so instead I just use a separate api object for each fetch
+         # This fixes issues the api was having
+        #self.get_likes()
+        #self.api. 
+    def get_cookies(self,**kwargs):
+        return self.cookies
+    def get_likes(self):
+        print(list(self.api.user(username="dee_learns_norsk").liked()))
     def change_display_count(self,count):
         self.display_count = count
     
@@ -152,6 +182,8 @@ class windowMaker:
                 self.t3canvas.yview_scroll(int(-1*(event.delta/100)), "units")
             elif(tab=="Videos By Hashtag"):
                 self.t4canvas.yview_scroll(int(-1*(event.delta/100)), "units")
+            elif(tab=="Videos By Search"):
+                self.t5canvas.yview_scroll(int(-1*(event.delta/100)), "units")
     
     def update(self):
 
@@ -163,6 +195,7 @@ class windowMaker:
         self.t2canvas.config(scrollregion=self.t2canvas.bbox('all'))
         self.t3canvas.config(scrollregion=self.t3canvas.bbox('all'))
         self.t4canvas.config(scrollregion=self.t4canvas.bbox('all'))
+        self.t5canvas.config(scrollregion=self.t5canvas.bbox('all'))
 
         if(self.player_open==1):
             self.app.canvas.config(scrollregion=self.app.canvas.bbox('all'))
@@ -182,17 +215,18 @@ class windowMaker:
         self.root.after(100,self.update)
 
     def scrollGenerationTrigger(self):
-
+        #return
         while 1:
             time.sleep(1)
             x,y = self.ybar.get()
             x,y2 = self.t2ybar.get()
             x,y3 = self.t3ybar.get()
             x,y4 = self.t4ybar.get()
+            x,y5 = self.t5ybar.get()
             tab = self.tc.tab(self.tc.select(),"text")
             #print("Y: ",y," TAB 2 Y: ",y2, " TAB 3 Y: ", y3)
             #print(y)
-            if ((y >= .96 and tab=="Your Likes") or (y2 >= .96 and tab=="User Posts") or (y3 >= .96 and tab=="Videos By Sound") or (y4 >= .96 and tab=="Videos By Hashtag")) and self.finishedFirstGeneration==1 and self.generationLock==0:
+            if ((y >= .96 and tab=="Your Likes") or (y2 >= .96 and tab=="User Posts") or (y3 >= .96 and tab=="Videos By Sound") or (y4 >= .96 and tab=="Videos By Hashtag") or (y5 >= .96 and tab=="Videos By Search"))  and self.finishedFirstGeneration==1 and self.generationLock==0:
             #print("End of scrollbar, display more")
                 if tab == "Your Likes" and self.t1_generation_lock==0 and self.t1_generated:
                     self.generationLock=1
@@ -230,6 +264,16 @@ class windowMaker:
                     self.t4_images.clear()
                     self.display_hashtagvids()
                     self.generationLock=0
+                
+                elif tab == "Videos By Search" and self.t5_generation_lock==0 and self.t5_generated:
+                    if self.t5_index == len(self.by_search_list):
+                        #print("No more posts available")
+                        return
+                    self.generationLock=1
+                    self.clear_canvas()
+                    self.t5_images.clear()
+                    self.display_searchedvids()
+                    self.generationLock=0
 
     def modify(self):
         self.modified=1
@@ -240,13 +284,14 @@ class windowMaker:
         
         self.t1_generation_lock=1
         count = 0
-        display = 50
+        display = 30
         self.display_likes_continue = 1
         while count < display and self.display_likes_continue:
             count += 1
             try:
                 self.t1_display_a_tiktok()
-            except:
+            except Exception as e:
+                print(e)
                 pass
             if count == 1:
                 self.get_details(0)
@@ -265,7 +310,7 @@ class windowMaker:
 
         self.t2_generation_lock=1
         count = 0
-        display = 99
+        display = 30
         self.display_uploads_continue = 1
         while count < display and self.display_uploads_continue:
             count += 1
@@ -292,7 +337,7 @@ class windowMaker:
 
         self.t3_generation_lock=1
         count = 0
-        display = 99
+        display = 30
         self.display_sounds_continue=1
         while count < display and self.display_sounds_continue:
             count += 1
@@ -318,7 +363,7 @@ class windowMaker:
 
         self.t4_generation_lock=1
         count = 0
-        display = 99
+        display = 30
         self.display_hashtag_continue = 1
         while count < display and self.display_hashtag_continue:
             count += 1
@@ -336,6 +381,33 @@ class windowMaker:
         self.t4_retrieve_button.config(command=self.get_hashtag_list) 
         self.t4_generation_lock=0
         self.t4_generated=1
+
+        self.finishedFirstGeneration=1
+
+    def display_searchedvids(self):
+        self.t5_retrieve_button.config(text='Stop Generation')
+        self.t5_retrieve_button.config(command=self.kill_display_search_thread)
+
+        self.t5_generation_lock=1
+        count = 0
+        display = 30
+        self.display_search_continue = 1
+        while count < display and self.display_search_continue:
+            count += 1
+            try:
+                self.t5_display_a_tiktok()
+            except:
+                pass
+            #if count == 1:
+                #self.get_details(0)
+
+        self.add_scroll_buffer("Videos By Search")
+        
+
+        self.t5_retrieve_button.config(text='Retrieve TikToks')
+        self.t5_retrieve_button.config(command=self.get_searched_videos) 
+        self.t5_generation_lock=0
+        self.t5_generated=1
 
         self.finishedFirstGeneration=1
 
@@ -371,6 +443,15 @@ class windowMaker:
                 self.t4_images.append(photo)
                 thisBtn=tk.Button(self.t4frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center')
                 thisBtn.grid(row=self.t4_row+1,column=i)
+        
+        elif(tab == "Videos By Search"):
+            if self.t5_index == len(self.by_search_list):
+                print("No more posts available")
+                return
+            for i in range(0,3):
+                self.t5_images.append(photo)
+                thisBtn=tk.Button(self.t5frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center')
+                thisBtn.grid(row=self.t5_row+1,column=i)
 
     def get_active_tab(self):
         tab = self.tc.tab(self.tc.select(),"text")
@@ -382,6 +463,8 @@ class windowMaker:
             theList = self.by_sound_list
         elif(tab == "Videos By Hashtag"):
             theList = self.by_hashtag_list
+        elif(tab == "Videos By Search"):
+            theList = self.by_search_list
         
         return theList
     
@@ -395,7 +478,8 @@ class windowMaker:
             phrase = self.t3_retrieve_bar.get()
         elif(tab == "Videos By Hashtag"):
             phrase = self.t4_retrieve_bar.get()
-        
+        elif(tab == "Videos By Search"):
+            phrase = self.t5_retrieve_bar.get()
         return phrase
 
     def get_active_tab_downloadlast_bar(self):
@@ -409,7 +493,8 @@ class windowMaker:
             phrase = self.t3_download_last_bar.get()
         elif(tab == "Videos By Hashtag"):
             phrase = self.t4_download_last_bar.get()
-        
+        elif(tab == "Videos By Search"):
+            phrase = self.t5_download_last_bar.get()
         return phrase
 
     def download_stop(self):
@@ -463,6 +548,16 @@ class windowMaker:
             else:
                 count = int(self.get_active_tab_downloadlast_bar()) - 1
         
+        elif(tab == "Videos By Search"):
+            theList = self.by_search_list
+            start_button = self.t5_download_start_button
+
+            if self.var3.get()==1:
+                dl_list = self.t5_download_list
+                count = len(dl_list)
+                from_select=1
+            else:
+                count = int(self.get_active_tab_downloadlast_bar()) - 1
 
         self.start_download_list=1
         self.continue_download=1
@@ -473,14 +568,14 @@ class windowMaker:
         #self.updateTextbox("Completed {0}/{1}".format(loops,total)) Cant use with multithreading, wait until msg queue is set up
         if from_select == 1:
             for index in dl_list:
-                author = theList[index]['author']['uniqueId']
-                uniqueID = theList[index]['id']
+                author = theList[index]['as_dict']['author']['uniqueId']
+                uniqueID = theList[index]['as_dict']['id']
                 normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
                 self.download_queue.put((normalUrl,uniqueID))
         else:
             while count > -1 and self.continue_download==1:
-                author = theList[count]['author']['uniqueId']
-                uniqueID = theList[count]['id']
+                author = theList[count]['as_dict']['author']['uniqueId']
+                uniqueID = theList[count]['as_dict']['id']
                 normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
                 self.download_queue.put((normalUrl,uniqueID))
                 count-=1
@@ -511,10 +606,14 @@ class windowMaker:
         for index in self.t4_download_list:
             self.t4_button_dict[index].config(text='')
         
+        for index in self.t5_download_list:
+            self.t5_button_dict[index].config(text='')
+        
         self.t1_download_list.clear()
         self.t2_download_list.clear()
         self.t3_download_list.clear()
         self.t4_download_list.clear()
+        self.t5_download_list.clear()
 
     def single_download_or_select(self,link,download_url,unique_id,ind):
 
@@ -555,6 +654,14 @@ class windowMaker:
                     self.t4_download_list.remove(ind)
                     self.t4_button_dict[ind].config(text='')
             
+            if (tab == "Videos By Search"): 
+                if self.t5_button_dict[ind].cget('text') == '':
+                    self.t5_download_list.append(ind)
+                    self.t5_button_dict[ind].config(text='☑')
+                else:
+                    self.t5_download_list.remove(ind)
+                    self.t5_button_dict[ind].config(text='')
+            
             #self.updateTextbox("{0} TikToks Selected".format(str(len(self.download_list))))
 
         else: #Download
@@ -587,6 +694,11 @@ class windowMaker:
         t1.daemon=True
         t1.start()
     
+    def t5_display_button(self):
+        t1= threading.Thread(target=self.display_searchedvids)
+        t1.daemon=True
+        t1.start()
+
     def updateSoundBox(self,string):
         self.t3_retrieve_bar.delete(0,tk.END)
         self.t3_retrieve_bar.insert(tk.END,string)
@@ -607,6 +719,9 @@ class windowMaker:
             sound_ID = self.user_liked_list[index]['as_dict']['music']['id']
             bio = self.user_liked_list[index]['as_dict']['author']['signature']
             avatarLink = self.user_liked_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.user_liked_list[index]['as_dict']['id']
+            
+
         elif(tab == "User Posts"):
             author = '@'+ self.user_post_list[index]['as_dict']['author']['uniqueId']
             nick = self.user_post_list[index]['as_dict']['author']['nickname']
@@ -614,6 +729,8 @@ class windowMaker:
             sound_ID = self.user_post_list[index]['as_dict']['music']['id']
             bio = self.user_post_list[index]['as_dict']['author']['signature']
             avatarLink = self.user_post_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.user_post_list[index]['as_dict']['id']
+
         elif(tab == "Videos By Sound"):
             author = '@'+ self.by_sound_list[index]['as_dict']['author']['uniqueId']
             nick = self.by_sound_list[index]['as_dict']['author']['nickname']
@@ -621,6 +738,8 @@ class windowMaker:
             sound_ID = self.by_sound_list[index]['as_dict']['music']['id']
             bio = self.by_sound_list[index]['as_dict']['author']['signature']
             avatarLink = self.by_sound_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.by_sound_list[index]['as_dict']['id']
+
         elif(tab == "Videos By Hashtag"):
             author = '@'+ self.by_hashtag_list[index]['as_dict']['author']['uniqueId']
             nick = self.by_hashtag_list[index]['as_dict']['author']['nickname']
@@ -628,6 +747,21 @@ class windowMaker:
             sound_ID = self.by_hashtag_list[index]['as_dict']['music']['id']
             bio = self.by_hashtag_list[index]['as_dict']['author']['signature']
             avatarLink = self.by_hashtag_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.by_hashtag_list[index]['as_dict']['id']
+
+        elif(tab == "Videos By Search"):
+            author = '@'+ self.by_search_list[index]['as_dict']['author']['uniqueId']
+            nick = self.by_search_list[index]['as_dict']['author']['nickname']
+            sound_title = "Sound: "+self.by_search_list[index]['as_dict']['music']['title']
+            sound_ID = self.by_search_list[index]['as_dict']['music']['id']
+            bio = self.by_search_list[index]['as_dict']['author']['signature']
+            avatarLink = self.by_search_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.by_search_list[index]['as_dict']['id']
+
+
+
+        self.current_url = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
+
 
         self.detailsLineOne.delete("1.0",tk.END)
         self.detailsLineOne.insert(tk.END,author)
@@ -679,7 +813,8 @@ class windowMaker:
             current_button = self.t3_button_dict[button_id]
         elif(tab==4):
             current_button = self.t4_button_dict[button_id]
-
+        elif(tab==5):
+            current_button = self.t5_button_dict[button_id]
         
         
         video_bytes=self.api.get_bytes(url=link)
@@ -702,7 +837,7 @@ class windowMaker:
             return
         #print(self.user_liked_list[0])
         #print(self.user_liked_list[0]['video'])
-        #print("Hmm: ",self.user_liked_list[self.t1_index]['as_dict']['video']['originCover'])
+        #print("Hmm: ",self.user_liked_list[self.t1_index]['as_dict']['as_dict']['video']['originCover'])
         img_url = self.user_liked_list[self.t1_index]['as_dict']['video']['originCover']
         author = self.user_liked_list[self.t1_index]['as_dict']['author']['uniqueId']
         #download_url = self.user_liked_list[self.t1_index]['as_dict']['video']['downloadAddr']
@@ -712,6 +847,7 @@ class windowMaker:
         #print("Unique ID: ",uniqueID)
         like_count = str(self.user_liked_list[self.t1_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
         ind = self.t1_index
+        print(self.user_liked_list[self.t1_index]['as_dict']['createTime'])
 
         #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
         normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
@@ -858,6 +994,44 @@ class windowMaker:
             self.t4_col=0
             self.t4_row+=1
 
+    def t5_display_a_tiktok(self):
+            if self.t5_index == len(self.by_search_list):
+                #print("End of list")
+                return
+            img_url = self.by_search_list[self.t5_index]['as_dict']['video']['originCover']
+            author = self.by_search_list[self.t5_index]['as_dict']['author']['uniqueId']
+            download_url = self.by_search_list[self.t5_index]['as_dict']['video']['downloadAddr']
+            uniqueID = self.by_search_list[self.t5_index]['as_dict']['id']
+            like_count = str(self.by_search_list[self.t5_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
+            ind = self.t5_index
+
+            #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
+            normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
+
+            #Create Thumbnail
+            size = (260,462)
+            urllib.request.urlretrieve(img_url,'{0}/thumbs/t5_like.jpg'.format(self.cwd))
+            img = Image.open('{0}/thumbs/t5_like.jpg'.format(self.cwd))
+            img.thumbnail(size)
+            draw = ImageDraw.Draw(img)
+            draw.text((5,450),like_count,(255,255,255))
+
+            photo = ImageTk.PhotoImage(img)
+            self.t5_images.append(photo)
+
+            thisBtn=tk.Button(self.t5frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind))
+            thisBtn.grid(row=self.t5_row,column=self.t5_col)
+            
+            thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,download_url,5))
+            thisBtn.bind("<Button-2>",lambda e: self.get_details(ind))
+
+            self.t5_button_dict[ind]=thisBtn
+            self.t5_index+=1
+            self.t5_col+=1
+            if(self.t5_col%3==0):
+                self.t5_col=0
+                self.t5_row+=1
+
 
 
     def kill_display_likes_thread(self):
@@ -875,6 +1049,10 @@ class windowMaker:
     def kill_display_hashtag_thread(self):
         #print("trying..")
         self.display_hashtag_continue=0
+    
+    def kill_display_search_thread(self):
+        #print("trying..")
+        self.display_search_continue=0
 
     def sort_list(self,sort_mode,input_list):
 
@@ -884,7 +1062,7 @@ class windowMaker:
             return list(reversed(input_list))
 
         if sort_mode==2: #2 by views - reversed
-            return sorted(input_list,reverse=True,key=lambda item: int(item['as_dict']['stats']['playCount']))
+            return sorted(input_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
         
         if sort_mode==3: #3 by views - ascending
             return sorted(input_list,key=lambda item: int(item['as_dict']['stats']['playCount']))
@@ -894,8 +1072,10 @@ class windowMaker:
         self.username = self.t1_retrieve_bar.get()
         
         if self.var5.get() == 0: #cached list is ALWAYS used, so if it's unchecked just clear it before every pull 
-
-            os.remove('cachedpulls/{}_likes_backup.json'.format(self.username))
+            try:
+                os.remove('cachedpulls/{}_likes_backup.json'.format(self.username))
+            except:
+                pass
             self.var5.set(1) #just change it to a "Clear Cache" button later
         #current_user = self.api.user(self.username)
 
@@ -903,8 +1083,9 @@ class windowMaker:
 
         if  os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.displayChunk)):
             self.user_liked_list=[]
-            with open('cachedpulls/{}_likes_backup.json'.format(self.username)) as file:
+            with open('cachedpulls/{}_likes_backup.json'.format(self.username),'rb') as file:
                 self.user_liked_list=json.load(file)
+                #self.user_liked_list=list(self.user_liked_list['itemList'])
                     
             #print("Length on json: ",len(self.user_liked_list))
             if len(self.user_liked_list) >= self.displayChunk: #Doesnt cache when total videos is less than the requested
@@ -918,7 +1099,34 @@ class windowMaker:
             #self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             #self.user_liked_list=list(self.api.user(username=self.username).liked())
 
-            self.user_liked_list=list(self.api.user(username=self.username).liked(count=5))
+            #here
+            # self.temp_list=list(self.api.user(username=self.username).liked(count=30,cursor=0))
+            # print(self.temp_list[len(self.temp_list)-1].as_dict)
+            # time.sleep(2)
+            # self.user_liked_list=self.temp_list+(list(self.api.user(username=self.username).liked(count=30,cursor=0)))
+            ###
+           
+            #
+            
+            with open('cookies.json') as f:
+                cookies = json.load(f)
+
+            cookies_kv = {}
+            for cookie in cookies:
+                cookies_kv[cookie['name']] = cookie['value']
+
+
+            cookies = cookies_kv
+
+
+            def get_cookies(**kwargs):
+                return cookies
+
+
+            api = TikTokApi()
+
+            api._get_cookies = get_cookies  # This fixes issues the api was having
+            self.user_liked_list=list(api.user(username=self.username).liked(count=1000))
             self.backup_likes()
             self.get_liked_list()
             return
@@ -939,21 +1147,26 @@ class windowMaker:
         self.t1_display_button()
         #self.backup_likes()
 
-    def get_user_uploads(self):
-        print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds to pull 500 videos")
-        
+    def get_user_uploads(self):        
         self.clear_canvas()
         self.username=self.t2_retrieve_bar.get()
-        self.last_username=self.username
 
-        if self.var5.get() == 1 and os.path.isfile('cachedpulls/{}_posts_backup.json'.format(self.username)):
-            #print("Back up detected")
-            
+        if self.var5.get() == 0:
+            try:
+                os.remove('cachedpulls/{}_likes_backup.json'.format(self.username))
+            except:
+                pass
+            self.var5.set(1)
+        
+        self.last_username = self.username
+
+        if  os.path.isfile('cachedpulls/{}_posts_backup.json'.format(self.username)):
             self.user_post_list=[]
-            with open('cachedpulls/{}_posts_backup.json'.format(self.username)) as file:
+            with open('cachedpulls/{}_posts_backup.json'.format(self.username),'rb') as file:
                 self.user_post_list=json.load(file)
+                #self.user_post_list=list(self.user_post_list['itemList'])
                     
-            print("Length on json: ",len(self.user_post_list))
+            #print("Length on json: ",len(self.user_post_list))
             if len(self.user_post_list) >= self.displayChunk:
                 self.t2_index = 0
                 self.user_post_list=self.sort_list(self.t2_sort_mode,self.user_post_list)
@@ -963,13 +1176,102 @@ class windowMaker:
         
         
         else:
-            self.user_post_list = list(self.api.user(username=self.username).videos(count=self.displayChunk))
+
+            with open('cookies.json') as f:
+                cookies = json.load(f)
+
+            cookies_kv = {}
+            for cookie in cookies:
+                cookies_kv[cookie['name']] = cookie['value']
+
+
+            cookies = cookies_kv
+
+
+            def get_cookies(**kwargs):
+                return cookies
+
+
+            api = TikTokApi()
+
+            api._get_cookies = get_cookies  # This fixes issues the api was having
+            self.user_post_list = list(api.user(username=self.username).videos(count=60))
+            self.backup_posts()
+            self.get_user_uploads()
+            return
+        
         self.user_post_list = self.sort_list(self.t2_sort_mode,self.user_post_list)
+        if len(self.user_post_list)==0:
+            print("TikTok has blocked the retrieval. Try again and make sure your likes are public")
+            return
 
         print("Retrieved {} tiktoks by uploads".format(len(self.user_post_list)))
         self.t2_index=0
         self.t2_display_button()
-        self.backup_posts()
+        #self.backup_posts()
+    
+    def get_searched_videos(self):        
+        self.clear_canvas()
+        self.query=self.t5_retrieve_bar.get()
+
+        if self.var5.get() == 0:
+            try:
+                os.remove('cachedpulls/{}_query_backup.json'.format(self.query))
+            except:
+                pass
+            self.var5.set(1)
+        
+        self.last_query = self.query
+
+        if  os.path.isfile('cachedpulls/{}_query_backup.json'.format(self.query)):
+            self.by_search_list=[]
+            with open('cachedpulls/{}_query_backup.json'.format(self.query),'rb') as file:
+                self.by_search_list=json.load(file)
+                #self.by_search_list=list(self.by_search_list['itemList'])
+                    
+            #print("Length on json: ",len(self.by_search_list))
+            if len(self.by_search_list) >= self.displayChunk:
+                self.t5_index = 0
+                self.by_search_list=self.sort_list(self.t5_sort_mode,self.by_search_list)
+                print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_search_list)))
+                self.t5_display_button()                
+                return
+        
+        
+        else:
+
+            with open('cookies.json') as f:
+                cookies = json.load(f)
+
+            cookies_kv = {}
+            for cookie in cookies:
+                cookies_kv[cookie['name']] = cookie['value']
+
+
+            cookies = cookies_kv
+
+
+            def get_cookies(**kwargs):
+                return cookies
+
+
+            api = TikTokApi()
+
+            api._get_cookies = get_cookies  # This fixes issues the api was having
+            self.by_search_list = list(api.search.videos(self.query))
+            self.backup_searchedvids()
+            self.get_searched_videos()
+            return
+        
+        self.by_search_list = self.sort_list(self.t5_sort_mode,self.by_search_list)
+        if len(self.by_search_list)==0:
+            print("TikTok has blocked the retrieval. Try again and make sure your likes are public")
+            return
+
+        print("Retrieved {} tiktoks by uploads".format(len(self.by_search_list)))
+        self.t5_index=0
+        self.t5_display_button()
+        #self.backup_posts()
 
     def get_sound_videos(self):
         box = self.t3_retrieve_bar.get()
@@ -979,38 +1281,71 @@ class windowMaker:
 
             self.clear_canvas()
 
+            if self.var5.get() == 0: #cached list is ALWAYS used, so if it's unchecked just clear it before every pull 
+                try:
+                    os.remove('cachedpulls/{}_sound_backup.json'.format(self.soundID))
+                except:
+                    pass
+                self.var5.set(1)
+
             if os.path.isfile('cachedpulls/{}_sound_backup.json'.format(self.soundID)):
-                #print("Back up detected")
-                
                 self.by_sound_list=[]
                 with open('cachedpulls/{}_sound_backup.json'.format(self.soundID)) as file:
                     self.by_sound_list=json.load(file)
                         
-                print("Length on json: ",len(self.by_sound_list))
+                #print("Length on json: ",len(self.by_sound_list))
                 
-                self.t3_index = 0
-                self.by_sound_list=self.sort_list(self.t3_sort_mode,self.by_sound_list)
-                print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_sound_list)))
-                self.t3_display_button()                
-                return
+                if len(self.by_sound_list) >= self.displayChunk:
+                    self.t3_index = 0
+                    self.by_sound_list=self.sort_list(self.t3_sort_mode,self.by_sound_list)
+                    print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_sound_list)))
+                    self.t3_display_button()                
+                    return
+            else:
+                print("SOUND ID ",self.soundID)
+                with open('cookies.json') as f:
+                    cookies = json.load(f)
 
+                cookies_kv = {}
+                for cookie in cookies:
+                    cookies_kv[cookie['name']] = cookie['value']
+
+
+                cookies = cookies_kv
+
+
+                def get_cookies(**kwargs):
+                    return cookies
+
+
+                api = TikTokApi()
+
+                api._get_cookies = get_cookies
+
+                self.by_sound_list = list(api.sound(id=self.soundID).videos(count=1000))
+                self.backup_sound()
+                self.get_sound_videos()
+                return
+               
         else:
             self.search_sounds(box)
             return
+        
+        self.by_sound_list = self.sort_list(self.t3_sort_mode,self.by_sound_list)
+        if len(self.by_sound_list)==0:
+            print("TikTok has blocked the retrieval. Try again and make sure your likes are public")
+            return
+        print("Retrieved {} tiktoks by sound".format(len(self.by_sound_list)))
+
+        self.t3_index=0
+        self.t3_display_button()
+        #self.backup_sound()
             #self.soundID=self.t3_retrieve_bar.get()
             #self.soundID=self.api.search_for_music(self.t3_retrieve_bar.get(),count=1)[0]['music']['id']
 
         #self.clear_canvas()
         
-        print("SOUND ID ",self.soundID)
-        self.by_sound_list = self.api.by_sound(id=self.soundID,count=self.displayChunk,custom_did=self.did)
-        self.by_sound_list = self.sort_list(self.t3_sort_mode,self.by_sound_list)
-    
-        print("Retrieved {} tiktoks by sound".format(len(self.by_sound_list)))
-
-        self.t3_index=0
-        self.t3_display_button()
-        self.backup_sound()
+        
     
     def get_hashtag_list(self):
         self.clear_canvas()
@@ -1018,23 +1353,55 @@ class windowMaker:
         if '##' in self.username:
             self.username=self.username.replace('##','#')
             
-        self.last_username = self.username
+        
 
-        if self.var5.get() == 1 and os.path.isfile('cachedpulls/{}_hashtag_backup.json'.format(self.username,self.displayChunk)):
-            
+
+        if self.var5.get() == 0: #cached list is ALWAYS used, so if it's unchecked just clear it before every pull 
+            try:
+                os.remove('cachedpulls/{}_hashtag_backup.json'.format(self.username))
+            except:
+                pass
+            self.var5.set(1) #just change it to a "Clear Cache" button later
+        
+        self.last_username = self.username
+        
+        if os.path.isfile('cachedpulls/{}_hashtag_backup.json'.format(self.username,self.displayChunk)):
             self.by_hashtag_list=[]
             with open('cachedpulls/{}_hashtag_backup.json'.format(self.username)) as file:
                 self.by_hashtag_list=json.load(file)
                     
             #print("Length on json: ",len(self.by_hashtag_list))
-            
-            self.t4_index = 0
-            self.by_hashtag_list=self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
-            print("Retrieved {} tiktoks from cache. Uncheck 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_hashtag_list)))
-            self.t4_display_button()
-            return
+            if len(self.by_hashtag_list) >= self.displayChunk:
+                self.t4_index = 0
+                self.by_hashtag_list=self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
+                print("Retrieved {} tiktoks from cache. Uncheck 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_hashtag_list)))
+                self.t4_display_button()
+                return
         
-        self.by_hashtag_list = list(self.api.hashtag(name=self.username).videos())
+        else:
+            with open('cookies.json') as f:
+                cookies = json.load(f)
+
+            cookies_kv = {}
+            for cookie in cookies:
+                cookies_kv[cookie['name']] = cookie['value']
+
+
+            cookies = cookies_kv
+
+
+            def get_cookies(**kwargs):
+                return cookies
+
+
+            api = TikTokApi()
+
+            api._get_cookies = get_cookies  # This fixes issues the api was having
+            self.by_hashtag_list=list(api.hashtag(name=self.username).videos(1000))
+            self.backup_hashtag()
+            self.get_liked_list()
+            return        
+        
         self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
         
         if len(self.by_hashtag_list)==0:
@@ -1045,7 +1412,7 @@ class windowMaker:
         #self.updateTextbox("Likes Retrieved!")
         self.t4_index=0
         self.t4_display_button()
-        self.backup_hashtag()
+        #self.backup_hashtag()
 
 
     def search_sounds(self,query):
@@ -1118,12 +1485,24 @@ class windowMaker:
             
             self.t4_row=0
             self.t4_col=0
+        
+        elif (tab == "Videos By Search"):
+            theWidgetList = self.t5canvas.winfo_children()
+
+            for tiktok in theWidgetList:
+                if tiktok.winfo_children():
+                    theWidgetList.extend(tiktok.winfo_children()) 
+            for tiktok in theWidgetList:
+                tiktok.grid_forget()
+            
+            self.t5_row=0
+            self.t5_col=0
 
     def link_callback(self): #Opens browsers on link click
-        url=self.detailsLineOne.get("1.0",tk.END)
-        if '@' in url:
-            url = 'https://www.tiktok.com/' + url
-            webbrowser.open_new(url)
+        #url=self.detailsLineOne.get("1.0",tk.END)
+        #if '@' in url:
+        #    url = 'https://www.tiktok.com/' + url
+        webbrowser.open_new(self.current_url)
 
     def display_sound_videos(self,soundID):
         print(soundID)
@@ -1232,6 +1611,10 @@ class windowMaker:
             self.t4_download_last_label.config(text='Download Last(Max 500): ')
             self.t4_download_last_bar.config(state='normal')
             self.t4_download_start_button.config(command=threading.Thread(target=self.download_last).start)
+
+            self.t5_download_last_label.config(text='Download Last(Max 500): ')
+            self.t5_download_last_bar.config(state='normal')
+            self.t5_download_start_button.config(command=threading.Thread(target=self.download_last).start)
         else:
 
             self.t1_download_last_label.config(text='Download Last(Max 500): ')
@@ -1249,6 +1632,10 @@ class windowMaker:
             self.t4_download_last_label.config(text='Download Last(Max 500): ')
             self.t4_download_last_bar.config(state='disabled')
             self.t4_download_start_button.config(command=threading.Thread(target=self.download_last).start)
+
+            self.t5_download_last_label.config(text='Download Last(Max 500): ')
+            self.t5_download_last_bar.config(state='disabled')
+            self.t5_download_start_button.config(command=threading.Thread(target=self.download_last).start)
 
 
     def create_folders(self):
@@ -1311,7 +1698,19 @@ class windowMaker:
             self.t4_sort_selector_button.config(text="Sort - Views Ascending") #Oldest First
         else:
             self.t4_sort_mode=0
-            self.t4_sort_selector_button.config(text="Sort - Recent") #Default 
+            self.t4_sort_selector_button.config(text="Sort - Recent") #Default
+
+    def t5_select_sort_mode(self): #0 = No sort, 1 = Sort Views Descending, 2= sort views ascending, 3=Date OldDescending
+        self.t5_sort_mode+=1
+        if self.t5_sort_mode == 1:
+            self.t5_sort_selector_button.config(text="Sort - Oldest")
+        elif self.t5_sort_mode == 2:
+            self.t5_sort_selector_button.config(text="Sort - Views Descending")
+        elif self.t5_sort_mode == 3:
+            self.t5_sort_selector_button.config(text="Sort - Views Ascending") #Oldest First
+        else:
+            self.t5_sort_mode=0
+            self.t5_sort_selector_button.config(text="Sort - Recent") #Default 
 
     def stdout_redirector(self,inputstr):
         #print("Sending text to bottom: ",inputstr)
@@ -1346,16 +1745,72 @@ class windowMaker:
                 #json.dump(self.user_liked_list,f)
 
     def backup_posts(self):
-        with open('cachedpulls/{}_post_backup.json'.format(self.username),'w') as f:
-                json.dump(self.user_post_list,f)
+        with open('cachedpulls/{}_posts_backup.json'.format(self.username),'w') as f:
+            #json.dumps(self.user_liked_list,default=lambda o:o.__dict__,sort_keys=True,indent=4,f)
+            f.write('[')
+            length = len(self.user_post_list)
+            count = 0
+            for item in self.user_post_list:
+                count+=1
+                curr_line=json.dumps(item,default=lambda o:self._try(o),sort_keys=True,indent=4,separators=(',',':'))
+                f.write(curr_line)
+                if count < length:
+                    f.write(',')
+
+                
+                f.write("\n")
+            f.write(']')
 
     def backup_sound(self):
         with open('cachedpulls/{}_sound_backup.json'.format(self.soundID),'w') as f:
-                json.dump(self.by_sound_list,f)
+            #json.dumps(self.user_liked_list,default=lambda o:o.__dict__,sort_keys=True,indent=4,f)
+            f.write('[')
+            length = len(self.by_sound_list)
+            count = 0
+            for item in self.by_sound_list:
+                count+=1
+                curr_line=json.dumps(item,default=lambda o:self._try(o),sort_keys=True,indent=4,separators=(',',':'))
+                f.write(curr_line)
+                if count < length:
+                    f.write(',')
+
+                
+                f.write("\n")
+            f.write(']')
     
     def backup_hashtag(self):
         with open('cachedpulls/{}_hashtag_backup.json'.format(self.username),'w') as f:
-                json.dump(self.by_hashtag_list,f)
+            #json.dumps(self.user_liked_list,default=lambda o:o.__dict__,sort_keys=True,indent=4,f)
+            f.write('[')
+            length = len(self.by_hashtag_list)
+            count = 0
+            for item in self.by_hashtag_list:
+                count+=1
+                curr_line=json.dumps(item,default=lambda o:self._try(o),sort_keys=True,indent=4,separators=(',',':'))
+                f.write(curr_line)
+                if count < length:
+                    f.write(',')
+
+                
+                f.write("\n")
+            f.write(']')
+    
+    def backup_searchedvids(self):
+        with open('cachedpulls/{}_query_backup.json'.format(self.query),'w') as f:
+            #json.dumps(self.user_liked_list,default=lambda o:o.__dict__,sort_keys=True,indent=4,f)
+            f.write('[')
+            length = len(self.by_search_list)
+            count = 0
+            for item in self.by_search_list:
+                count+=1
+                curr_line=json.dumps(item,default=lambda o:self._try(o),sort_keys=True,indent=4,separators=(',',':'))
+                f.write(curr_line)
+                if count < length:
+                    f.write(',')
+
+                
+                f.write("\n")
+            f.write(']')
     
     def myscrollsetter(self,x0,x1): #overrides how the scrollbar value is changed to be easier to handle
         self.ybar.set(x0,x1)
@@ -1524,12 +1979,14 @@ package ifneeded awdark 7.12 \
         self.t2 = ttk.Frame(self.tc)
         self.t3 = ttk.Frame(self.tc)
         self.t4 = ttk.Frame(self.tc)
+        self.t5 = ttk.Frame(self.tc)
         self.tab_bookmarks = ttk.Frame(self.tc)
 
         self.tc.add(self.t1,text='Your Likes') #Tab One
         self.tc.add(self.t2,text='User Posts')   #Tab Two
         self.tc.add(self.t3,text="Videos By Sound") #Tab Three
         self.tc.add(self.t4,text="Videos By Hashtag") #Tab Three
+        self.tc.add(self.t5,text="Videos By Search") #Tab Three
         self.tc.add(self.tab_bookmarks,text="Bookmarks")
         self.tc.pack(expand=True,fill='y',pady=10)
         
@@ -1540,6 +1997,7 @@ package ifneeded awdark 7.12 \
         self.t2.bind("<Visibility>",self.tab_switch)
         self.t3.bind("<Visibility>",self.tab_switch)
         self.t4.bind("<Visibility>",self.tab_switch)
+        self.t5.bind("<Visibility>",self.tab_switch)
         self.tab_bookmarks.bind("<Visibility>",self.tab_switch)
 
         ###
@@ -1552,6 +2010,7 @@ package ifneeded awdark 7.12 \
         self.t2_sort_var = tk.IntVar()
         self.t3_sort_var = tk.IntVar()
         self.t4_sort_var = tk.IntVar()
+        self.t5_sort_var = tk.IntVar()
 
 
 
@@ -1830,6 +2289,68 @@ package ifneeded awdark 7.12 \
         #self.textFeed.config(wrap='none')
 
         ## EXTRA DETAILS TAB ######################################
+        ####################################################################################
+                #Tab Five- By Search
+
+        self.t5_headerButtonFrame =ttk.Frame(self.t5)
+        self.t5_headerButtonFrame.pack(pady=5,expand=False,fill='x',anchor='w')
+        
+        for i in range(0,8):
+            self.t5_headerButtonFrame.grid_columnconfigure(i,weight=1)
+        
+        var5 = tk.StringVar()
+        
+        self.t5_retrieve_bar_label = ttk.Label(self.t5_headerButtonFrame,textvariable=var5)
+        var4.set("Enter Hashtag: ")
+        self.t5_retrieve_bar_label.grid(row=0,column=0)
+        self.t5_retrieve_bar = ttk.Entry(self.t5_headerButtonFrame)
+        self.t5_retrieve_bar.grid(row=0,column=1)
+
+        self.t5_retrieve_button =ttk.Button(self.t5_headerButtonFrame, text="Retrieve TikToks",command=self.get_searched_videos)
+        self.t5_retrieve_button.grid(row=0,column=2,columnspan=2)
+        
+        self.t5_download_last_frame =ttk.Frame(self.t5_headerButtonFrame)
+        self.t5_download_last_frame.grid(row=0,column=5,columnspan=2)
+        self.t5_download_last_label = ttk.Label(self.t5_download_last_frame, state='disabled', text="Download Last(Max 500): ")
+        self.t5_download_last_label.grid(row=0,column=0)
+        self.t5_download_last_bar = ttk.Entry(self.t5_download_last_frame, state='disabled', width=5)
+        self.t5_download_last_bar.grid(row=0,column=1)
+
+        self.t5_download_start_button=ttk.Button(self.t5_headerButtonFrame, state='disabled', text="Start Downloads",command=threading.Thread(target=self.download_last).start)
+        self.t5_download_start_button.grid(row=0,column=7)
+
+        self.t5_sort_selector_button = ttk.Button(self.t5_headerButtonFrame,text="Sort - Recent",command=self.t5_select_sort_mode)
+        self.t5_sort_selector_button.grid(row=0,column=4)
+
+        #Scrollable Frame
+        self.t5frame_canvas =ttk.Frame(self.t5)
+        self.t5frame_canvas.grid_rowconfigure(0,weight=1)
+        self.t5frame_canvas.grid_columnconfigure(0,weight=1)
+        self.t5frame_canvas.grid_propagate(False)
+        self.t5frame_canvas.pack(expand=True,fill='y',anchor='w')
+        self.t5canvas = tk.Canvas(self.t5frame_canvas, bg="black",bd=0,highlightthickness=0,width=813,height=463)
+        self.t5canvas.pack(padx=0,pady=2, expand=True,fill='y')
+        #T1 Scroll Bar
+        self.t5ybar=ttk.Scrollbar(self.t5frame_canvas,orient="vertical",command=self.t5canvas.yview)
+        self.t5ybar.grid(column=1,row=0,sticky='ns')
+        self.t5canvas.configure(yscrollcommand=self.t5ybar.set)
+
+        #Canvas inside Scrollable Frame
+        self.t5frame_buttons=ttk.Frame(self.t5canvas)
+        self.t5canvas.create_window((0,0),window=self.t5frame_buttons,anchor='nw')
+        
+
+        self.t5canvas.config(scrollregion=self.t5canvas.bbox('all'))
+
+        #self.t5canvas.bind_all("<MouseWheel>",self.on_mousewheel)
+        self.t5canvas.yview_moveto('0')
+        #Bottom Feed - Might be unnecessary
+        #self.textFeed = tk.Text(self.mainFrame,pady=5)
+        #self.textFeed.pack(expand=False,pady=5)
+        #self.textFeed.insert(tk.INSERT,"Welcome")
+        #self.textFeed.config(wrap='none')
+
+        ## EXTRA DETAILS TAB ######################################
         self.detailsFrame =ttk.Frame(self.root)
         self.detailsFrame.pack(side='left',fill='y',expand=True,anchor='w')
         
@@ -2058,6 +2579,7 @@ package ifneeded awdark 7.12 \
         self.t1_retrieve_bar.insert(0,'dee_learns_norsk') #Later on use txt file
         self.t2_retrieve_bar.insert(0,'username')
         self.display_chunk_entry.insert(0,self.displayChunk)
+        self.display_chunk_entry.config(state='disabled') #Locked due to bug
         
         self.root.after(3000,self.update)
         #print("Running main loop")
