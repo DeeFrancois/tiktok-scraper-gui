@@ -5,18 +5,16 @@
 
 # Need to eventually figure out why this hangs sometimes during display_likes process sometimes
 # Note: Cached Lists only last a day since the links are not permament (could be less than a day but haven't tested to find exact duration)
-# wtf is causing the performance dips???? Mostly noticeable through slow-downs during the display_likes process
 # Downloading through the tiktok api works now but I don't think it's faster than ytdl, can add toggle to choose which to use later
 # 
-# TODO: Bookmark list for usernames/hashtags/etc, avatar button opens tiktok in web, line for social link if the api can get it
-# thread the previews as well, add trending tab
+# TODO: 
+# extra details line for social link if the api can get it
+# thread the previews as well
+# add trending tab
 
-#3/27/22 updated to tiktokapi 5.0, but captcha errors for every method besides gettign user likes (and can only pull 30 at a time)
-#3/29/22 WIth TIkTokApi 5.0 we need to use likedlist['as_dict']['id'] to get info rather than likedlist['id'], but when I cache it I can no longer use "['as_dict']"
+# WIth TIkTokApi 5.0 we need to use likedlist['as_dict']['id'] to get info rather than likedlist['id'], but when I cache it I can no longer use "['as_dict']"
 #so instead I can just use the cached list for the first load and do likedlist['as_dict']['id']
-# TODO: apply previous line thing to the other retrieval methods as well
-
-#6/6/2022 - TikTokApi seems to have been discontinued. Will have to find a way to produce a list myself so I can atleast create a demo for it
+# Only works when you can incorporate your own cookies, will try to automate this process (Companion Extension?)
 
 from enum import unique
 import os
@@ -155,8 +153,7 @@ class windowMaker:
 
         self.api._get_cookies = self.get_cookies  # getting cookies at this stage doesnt work when using self.api later on, so instead I just use a separate api object for each fetch
          # This fixes issues the api was having
-        #self.get_likes()
-        #self.api. 
+
     def get_cookies(self,**kwargs):
         return self.cookies
     def get_likes(self):
@@ -215,7 +212,6 @@ class windowMaker:
         self.root.after(100,self.update)
 
     def scrollGenerationTrigger(self):
-        #return
         while 1:
             time.sleep(1)
             x,y = self.ybar.get()
@@ -224,10 +220,10 @@ class windowMaker:
             x,y4 = self.t4ybar.get()
             x,y5 = self.t5ybar.get()
             tab = self.tc.tab(self.tc.select(),"text")
-            #print("Y: ",y," TAB 2 Y: ",y2, " TAB 3 Y: ", y3)
-            #print(y)
+
             if ((y >= .96 and tab=="Your Likes") or (y2 >= .96 and tab=="User Posts") or (y3 >= .96 and tab=="Videos By Sound") or (y4 >= .96 and tab=="Videos By Hashtag") or (y5 >= .96 and tab=="Videos By Search"))  and self.finishedFirstGeneration==1 and self.generationLock==0:
-            #print("End of scrollbar, display more")
+            #print("End of scrollbar, displaying more")
+
                 if tab == "Your Likes" and self.t1_generation_lock==0 and self.t1_generated:
                     self.generationLock=1
                     if self.t1_index == len(self.user_liked_list):
@@ -564,7 +560,7 @@ class windowMaker:
         
         total = count
         loops = 0
-        #print("Starting download")
+
         #self.updateTextbox("Completed {0}/{1}".format(loops,total)) Cant use with multithreading, wait until msg queue is set up
         if from_select == 1:
             for index in dl_list:
@@ -580,7 +576,6 @@ class windowMaker:
                 self.download_queue.put((normalUrl,uniqueID))
                 count-=1
                 #self.updateTextbox("Completed {0}/{1}".format(loops,total))
-        #print("Finished donwload")
         if from_select == 1:
             self.deselect()
             from_select = 0
@@ -589,9 +584,8 @@ class windowMaker:
 
         self.continue_download=0
         self.start_download_list=0
-        #print("Finished Download Last")
+
         sys.exit()
-        #print("ran through")
     
     def deselect(self):
         for index in self.t1_download_list:
@@ -1035,23 +1029,18 @@ class windowMaker:
 
 
     def kill_display_likes_thread(self):
-        #print("trying..")
         self.display_likes_continue=0
     
     def kill_display_uploads_thread(self):
-        #print("trying..")
         self.display_uploads_continue=0
     
     def kill_display_sounds_thread(self):
-        #print("trying..")
         self.display_sounds_continue=0
     
     def kill_display_hashtag_thread(self):
-        #print("trying..")
         self.display_hashtag_continue=0
     
     def kill_display_search_thread(self):
-        #print("trying..")
         self.display_search_continue=0
 
     def sort_list(self,sort_mode,input_list):
@@ -1077,7 +1066,6 @@ class windowMaker:
             except:
                 pass
             self.var5.set(1) #just change it to a "Clear Cache" button later
-        #current_user = self.api.user(self.username)
 
         self.last_username = self.username
 
@@ -1142,10 +1130,8 @@ class windowMaker:
 
 
         print("Retrieved {} of your likes".format(len(self.user_liked_list)))
-        #self.updateTextbox("Likes Retrieved!")
         self.t1_index=0
         self.t1_display_button()
-        #self.backup_likes()
 
     def get_user_uploads(self):        
         self.clear_canvas()
@@ -1397,7 +1383,7 @@ class windowMaker:
             api = TikTokApi()
 
             api._get_cookies = get_cookies  # This fixes issues the api was having
-            self.by_hashtag_list=list(api.hashtag(name=self.username).videos(1000))
+            self.by_hashtag_list=list(api.hashtag(name=self.username).videos(200))
             self.backup_hashtag()
             self.get_liked_list()
             return        
@@ -1520,12 +1506,7 @@ class windowMaker:
             self.library=0
 
     def download_button(self):
-        #print("Retrieving tiktoks.. don't worry if it looks frozen, could take ~10 seconds to pull 500 videos")
-        #self.msg_queue.append("Don't worry it's working!")
-        #self.msg_queue.append("...")
-        #self.msg_queue.append("..")
-        #self.msg_queue.append("....")
-        #print("")
+        
         self.update_flag=1
         self.get_liked_list()
         self.update_flag=0
@@ -1716,8 +1697,7 @@ class windowMaker:
         #print("Sending text to bottom: ",inputstr)
         self.bottom_text_feed.see(tk.END)
         self.bottom_text_feed.insert(tk.END,inputstr)
-        #self.bottom_text_feed
-        #self.bottom_text_feed.see()
+
 
     def _try(self,o):
         try:
@@ -1990,8 +1970,7 @@ package ifneeded awdark 7.12 \
         self.tc.add(self.tab_bookmarks,text="Bookmarks")
         self.tc.pack(expand=True,fill='y',pady=10)
         
-        #self.control_button=ttk.Button(self.control_box,width=10,text="THIS IS A TEST")
-        #self.control_button.pack()
+        
 
         self.t1.bind("<Visibility>",self.tab_switch) #Eventually utilize this so dont have to keep doing tab=tk.select("text") or whatever
         self.t2.bind("<Visibility>",self.tab_switch)
@@ -2054,8 +2033,7 @@ package ifneeded awdark 7.12 \
 
         for i in range(0,8):
             self.headerButtonFrame.grid_columnconfigure(i,weight=1)
-        #self.headerButtonFrame.grid_columnconfigure(4,weight=0)
-        #self.headerButtonFrame.grid_columnconfigure((0,1,2,3,5,6),weight=1,uniform="foo")
+      
         
         var = tk.StringVar()
         
@@ -2111,8 +2089,7 @@ package ifneeded awdark 7.12 \
         ####################################################################################
                 #Tab Two - User Uploads
         #Retrieval Button
-        #self.GetPostsButton =ttk.Button(self.t2, text="Get Posts",command=self.get_user_uploads)
-        #self.GetPostsButton.pack()
+      
 
         self.t2_headerButtonFrame =ttk.Frame(self.t2)
         self.t2_headerButtonFrame.pack(pady=5,expand=False,fill='x',anchor='w')
@@ -2344,11 +2321,7 @@ package ifneeded awdark 7.12 \
 
         #self.t5canvas.bind_all("<MouseWheel>",self.on_mousewheel)
         self.t5canvas.yview_moveto('0')
-        #Bottom Feed - Might be unnecessary
-        #self.textFeed = tk.Text(self.mainFrame,pady=5)
-        #self.textFeed.pack(expand=False,pady=5)
-        #self.textFeed.insert(tk.INSERT,"Welcome")
-        #self.textFeed.config(wrap='none')
+     
 
         ## EXTRA DETAILS TAB ######################################
         self.detailsFrame =ttk.Frame(self.root)
@@ -2399,13 +2372,6 @@ package ifneeded awdark 7.12 \
         self.detailsLineFive.insert(tk.INSERT,"Sound ID")
         self.detailsLineFive.config(wrap='none',width=37)
 
-        #self.bookmark_label_one = ttk.Label(self.detailsFrame,text="☆",font=("TkDefaultFont",13),background='#191c1d')
-        #self.bookmark_label_one.place(x=230,y=35)
-        #self.bookmark_label_one.bind("<Button-1>",self.add_username_bookmark)
-
-        #self.bookmark_label_two = ttk.Label(self.detailsFrame,text="☆",font=("TkDefaultFont",13),background='#191c1d')
-        #self.bookmark_label_two.place(x=230,y=555)
-        #self.bookmark_label_two.bind("<Button-1>",self.add_sound_bookmark)
         ####################################################
 
         #BOOKMARKS
@@ -2532,33 +2498,6 @@ package ifneeded awdark 7.12 \
 
         self.populate_bookmarks()
 
-        
-        #self.your_library_frame =ttk.Frame(self.root,width=300)
-        #self.your_library_frame.pack(side='left',fill='y',expand=False)
-        #One tiktok wide, infinite scroll, able to play on click
-        
-        #self.yL_canvas_frame =ttk.Frame(self.your_library_frame)
-        #self.yL_canvas_frame.grid_rowconfigure(0,weight=1)
-        #self.yL_canvas_frame.grid_columnconfigure(0,weight=1)
-        #self.yL_canvas_frame.grid_propagate(False)
-        #self.yL_canvas_frame.pack(expand=True,fill='y')
-        #self.yL_canvas = tk.Canvas(self.yL_canvas_frame, bg="black",width=816,height=463)
-        #self.yL_canvas.pack(padx=0,pady=2, expand=True,fill='y')
-        ##T1 Scroll Bar
-        #self.yL_ybar=ttk.Scrollbar(self.yL_canvas_frame,orient="vertical",command=self.t3canvas.yview)
-        #self.yL_ybar.grid(column=1,row=0,sticky='ns')
-        #self.yL_canvas.configure(yscrollcommand=self.yL_ybar.set)
-
-        #Canvas inside Scrollable Frame
-        #self.yL_buttons=ttk.Frame(self.yL_canvas)
-        #self.yL_canvas.create_window((0,0),window=self.yL_buttons,anchor='nw')
-        
-
-        #self.yL_canvas.config(scrollregion=self.yL_canvas.bbox('all'))
-
-        #self.t3canvas.bind_all("<MouseWheel>",self.t3on_mousewheel)
-        #self.yL_canvas.yview_moveto('0')
-
 
         #################################################
         #print("Creating threads")
@@ -2658,7 +2597,7 @@ class videoPlayer:
         self.folder_size_label.config(text='Folder Size: {0}MB'.format(current_size))
     def get_folder_size(self):
         total_size = 0
-        dl_path='{0}/downloads/'.format(self.cwd)
+        dl_path='{0}/demovids/'.format(self.cwd)
         for path, dirs, files in os.walk(dl_path):
             for f in files:
                 fp = os.path.join(path, f)
@@ -2683,7 +2622,7 @@ class videoPlayer:
     def grab_library(self):
 
         self.clear_canvas()
-        self.list_of_files = sorted(Path('{0}/downloads/'.format(self.cwd)).iterdir(),key=os.path.getctime,reverse=True)
+        self.list_of_files = sorted(Path('{0}/demovids/'.format(self.cwd)).iterdir(),key=os.path.getctime,reverse=True)
 
         for a in self.list_of_files:
             if not a.is_file() and a=='log':
@@ -2694,7 +2633,7 @@ class videoPlayer:
 
     def display_videos(self):
         count = 10
-        file_num = len(os.listdir('{0}/downloads/'.format(self.cwd)))
+        file_num = len(os.listdir('{0}/demovids/'.format(self.cwd)))
         if count > file_num:
             count = file_num
         while count > 0:
@@ -2771,7 +2710,7 @@ class DownloaderThread(threading.Thread):
     def download_with_ytdl(self,link,unique_id):
         print("In download")
         cwd = os.getcwd()
-        ydl_opts = {'outtmpl':'{0}/downloads/{1}.%(ext)s'.format(cwd,unique_id)}
+        ydl_opts = {'outtmpl':'{0}/demovids/{1}.%(ext)s'.format(cwd,unique_id)}
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
             try:
                 print("Okay downloading: ",link)
@@ -2797,7 +2736,7 @@ class DownloaderThread(threading.Thread):
            video_bytes=ap.get_bytes(url=self.link)
         #video_bytes=self.api.get_bytes(url=unique_id)
         print("HERE")
-        with open('{0}.mp4'.format(self.unique_id),'wb') as output:
+        with open('demovids/{0}.mp4'.format(self.unique_id),'wb') as output:
             output.write(video_bytes)
         return
 
