@@ -130,6 +130,8 @@ class windowMaker:
         self.t4_sort_mode=0
         self.t5_sort_mode=0
 
+        self.retrieve_amount=200
+
         self.msg_queue=queue.Queue()
         self.download_queue=queue.Queue()
         self.exit_flag=0
@@ -161,6 +163,12 @@ class windowMaker:
     def change_display_count(self,count):
         self.display_count = count
     
+    def clear_cache(self):
+        try:
+            os.remove('cachedpulls/{}_likes_backup.json'.format(self.username))
+        except:
+            pass
+
     def on_mousewheel(self, event):
   
         if 'toplevel' in str(event.widget):
@@ -185,8 +193,11 @@ class windowMaker:
     def update(self):
 
         #Scroll bar updates
-        if self.display_chunk_entry.get()!=self.displayChunk:
-            self.displayChunk=int(self.display_chunk_entry.get())
+        if self.display_chunk_entry.get()!=self.retrieve_amount:
+            try:
+                self.retrieve_amount=int(self.display_chunk_entry.get())
+            except:
+                self.retrieve_amount=100
         
         self.canvas.config(scrollregion=self.canvas.bbox('all'))
         self.t2canvas.config(scrollregion=self.t2canvas.bbox('all'))
@@ -1060,23 +1071,23 @@ class windowMaker:
         self.clear_canvas()
         self.username = self.t1_retrieve_bar.get()
         
-        if self.var5.get() == 0: #cached list is ALWAYS used, so if it's unchecked just clear it before every pull 
-            try:
-                os.remove('cachedpulls/{}_likes_backup.json'.format(self.username))
-            except:
-                pass
-            self.var5.set(1) #just change it to a "Clear Cache" button later
+        # if self.var5.get() == 0: #cached list is ALWAYS used, so if it's unchecked just clear it before every pull 
+        #     try:
+        #         os.remove('cachedpulls/{}_likes_backup.json'.format(self.username))
+        #     except:
+        #         pass
+        #     self.var5.set(1) #just change it to a "Clear Cache" button later
 
         self.last_username = self.username
 
-        if  os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.displayChunk)):
+        if  os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.retrieve_amount)):
             self.user_liked_list=[]
             with open('cachedpulls/{}_likes_backup.json'.format(self.username),'rb') as file:
                 self.user_liked_list=json.load(file)
                 #self.user_liked_list=list(self.user_liked_list['itemList'])
                     
             #print("Length on json: ",len(self.user_liked_list))
-            if len(self.user_liked_list) >= self.displayChunk: #Doesnt cache when total videos is less than the requested
+            if len(self.user_liked_list) >= self.retrieve_amount: #Doesnt cache when total videos is less than the requested
                 self.t1_index = 0
                 self.user_liked_list=self.sort_list(self.t1_sort_mode,self.user_liked_list)
                 print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
@@ -1114,7 +1125,7 @@ class windowMaker:
             api = TikTokApi()
 
             api._get_cookies = get_cookies  # This fixes issues the api was having
-            self.user_liked_list=list(api.user(username=self.username).liked(count=1000))
+            self.user_liked_list=list(api.user(username=self.username).liked(count=self.retrieve_amount))
             self.backup_likes()
             self.get_liked_list()
             return
@@ -1153,7 +1164,7 @@ class windowMaker:
                 #self.user_post_list=list(self.user_post_list['itemList'])
                     
             #print("Length on json: ",len(self.user_post_list))
-            if len(self.user_post_list) >= self.displayChunk:
+            if len(self.user_post_list) >= self.retrieve_amount:
                 self.t2_index = 0
                 self.user_post_list=self.sort_list(self.t2_sort_mode,self.user_post_list)
                 print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
@@ -1181,7 +1192,7 @@ class windowMaker:
             api = TikTokApi()
 
             api._get_cookies = get_cookies  # This fixes issues the api was having
-            self.user_post_list = list(api.user(username=self.username).videos(count=60))
+            self.user_post_list = list(api.user(username=self.username).videos(count=self.retrieve_amount))
             self.backup_posts()
             self.get_user_uploads()
             return
@@ -1216,7 +1227,7 @@ class windowMaker:
                 #self.by_search_list=list(self.by_search_list['itemList'])
                     
             #print("Length on json: ",len(self.by_search_list))
-            if len(self.by_search_list) >= self.displayChunk:
+            if len(self.by_search_list) >= self.retrieve_amount:
                 self.t5_index = 0
                 self.by_search_list=self.sort_list(self.t5_sort_mode,self.by_search_list)
                 print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_search_list)))
@@ -1281,7 +1292,7 @@ class windowMaker:
                         
                 #print("Length on json: ",len(self.by_sound_list))
                 
-                if len(self.by_sound_list) >= self.displayChunk:
+                if len(self.by_sound_list) >= self.retrieve_amount:
                     self.t3_index = 0
                     self.by_sound_list=self.sort_list(self.t3_sort_mode,self.by_sound_list)
                     print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_sound_list)))
@@ -1308,7 +1319,7 @@ class windowMaker:
 
                 api._get_cookies = get_cookies
 
-                self.by_sound_list = list(api.sound(id=self.soundID).videos(count=1000))
+                self.by_sound_list = list(api.sound(id=self.soundID).videos(count=self.retrieve_amount))
                 self.backup_sound()
                 self.get_sound_videos()
                 return
@@ -1351,13 +1362,13 @@ class windowMaker:
         
         self.last_username = self.username
         
-        if os.path.isfile('cachedpulls/{}_hashtag_backup.json'.format(self.username,self.displayChunk)):
+        if os.path.isfile('cachedpulls/{}_hashtag_backup.json'.format(self.username,self.retrieve_amount)):
             self.by_hashtag_list=[]
             with open('cachedpulls/{}_hashtag_backup.json'.format(self.username)) as file:
                 self.by_hashtag_list=json.load(file)
                     
             #print("Length on json: ",len(self.by_hashtag_list))
-            if len(self.by_hashtag_list) >= self.displayChunk:
+            if len(self.by_hashtag_list) >= self.retrieve_amount:
                 self.t4_index = 0
                 self.by_hashtag_list=self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
                 print("Retrieved {} tiktoks from cache. Uncheck 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.by_hashtag_list)))
@@ -2018,8 +2029,10 @@ package ifneeded awdark 7.12 \
         self.check_selection.grid(row=0,column=4,padx=5)
         self.check_proxy = ttk.Checkbutton(self.checkBoxFrame,text=" ̷P̷r̷o̷x̷y̷ ̷M̷o̷d̷e̷",variable=self.var4,onvalue=1,offvalue=0)
         self.check_proxy.grid(row=0,column=5,padx=5)
-        self.check_use_cached = ttk.Checkbutton(self.checkBoxFrame,text="Use Cached Lists",variable=self.var5,onvalue=1,offvalue=0)
-        self.check_use_cached.grid(row=0,column=6,padx=6)
+        # self.check_use_cached = ttk.Checkbutton(self.checkBoxFrame,text="Use Cached Lists",variable=self.var5,onvalue=1,offvalue=0)
+        # self.check_use_cached.grid(row=0,column=6,padx=6)
+        self.clear_cache_button =ttk.Button(self.checkBoxFrame, text="Clear Cached",command=self.clear_cache)
+        self.clear_cache_button.grid(row=0,column=6,padx=6)
 
         self.checkBoxFrame.grid(row=0,column=0) #use to be 348
 
@@ -2517,8 +2530,8 @@ package ifneeded awdark 7.12 \
         self.openLibrary()
         self.t1_retrieve_bar.insert(0,'dee_learns_norsk') #Later on use txt file
         self.t2_retrieve_bar.insert(0,'username')
-        self.display_chunk_entry.insert(0,self.displayChunk)
-        self.display_chunk_entry.config(state='disabled') #Locked due to bug
+        self.display_chunk_entry.insert(0,self.retrieve_amount)
+        #self.display_chunk_entry.config(state='disabled') #Locked due to bug
         
         self.root.after(3000,self.update)
         #print("Running main loop")
