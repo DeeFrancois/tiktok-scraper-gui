@@ -306,7 +306,11 @@ class windowMaker:
         self.t1_retrieve_button.config(text='Retrieve TikToks')
         self.t1_retrieve_button.config(command=self.get_liked_list)
         self.t1_generation_lock=0
-        self.t1_generated=1
+
+        if len(self.user_liked_list) == 0:
+            self.t1_generated=0
+        else:
+            self.t1_generated=1
 
         self.finishedFirstGeneration=1
         
