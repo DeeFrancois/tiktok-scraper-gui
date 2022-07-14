@@ -16,13 +16,21 @@ I figured more people could benefit from this api if it had an interface. I was 
 
 **Make sure your likes are public, enter your username in the top bar, click Retrieve TikToks**
 
-- Left Click to Download (or to Select if Automated Download Mode is enabled)
-- Right Click to Preview
-- Middle Click to get extra details (Extra Details tab must be enabled)
-- Click on the user avatar to open in your browser
-- "Show Player" will open a companion video player (powered by [mpv](https://github.com/jaseg/python-mpv)) in another window for scrolling through downloaded videos
-- Once the cache expires, uncheck "Used Cached List" to retrieve a fresh list
+<sup> *Retrievals are cached but the links expire after a day (?) so make sure you clear the cache eventually in order to get a fresh batch. </sup>
 
+- Left Click to download (or to Select if Automated Download Mode is enabled)
+- Right Click to preview (Powered by [mpv](https://github.com/jaseg/python-mpv))
+
+![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
+
+- Middle Click to get more info after the Extra Details sidebar is enabled
+- Click on the User Avatar to open in your browser
+
+![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
+
+- "Show Player" will open the Companion Video Player in another window for scrolling through downloaded videos
+
+![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
 
 
 Licensed under the [MIT License](LICENSE).
