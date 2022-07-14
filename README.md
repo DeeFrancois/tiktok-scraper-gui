@@ -18,19 +18,23 @@ I figured more people could benefit from this api if it had an interface. I was 
 
 <sup> *Retrievals are cached but the links expire after a day (?) so make sure you clear the cache eventually in order to get a fresh batch. </sup>
 
-- Left Click to download (Powered by [ytdl] (https://github.com/jaseg/python-mpv))
+- Left Click to download (Powered by [ytdl](https://github.com/jaseg/python-mpv))
 - Right Click to preview (Powered by [mpv](https://github.com/jaseg/python-mpv))
 
-![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
+![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/leftrightClick.gif)
+
+- If Selection Mode is enabled you can use Left Click to instead select which TikToks to download
+
+![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/selectionMode.gif)
 
 - Middle Click to get more info after the Extra Details sidebar is enabled
 - Click on the User Avatar to open in your browser
 
-![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
+![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/showDetails.gif)
 
 - "Show Player" will open the Companion Video Player in another window for scrolling through downloaded videos
 
-![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
+![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/showPlayer.gif)
 
 
 Licensed under the [MIT License](LICENSE).
