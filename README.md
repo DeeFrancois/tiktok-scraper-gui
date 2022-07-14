@@ -18,7 +18,7 @@ I figured more people could benefit from this api if it had an interface. I was 
 
 <sup> *Retrievals are cached but the links expire after a day (?) so make sure you clear the cache eventually in order to get a fresh batch. </sup>
 
-- Left Click to download (or to Select if Automated Download Mode is enabled)
+- Left Click to download (Powered by [ytdl] (https://github.com/jaseg/python-mpv))
 - Right Click to preview (Powered by [mpv](https://github.com/jaseg/python-mpv))
 
 ![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
