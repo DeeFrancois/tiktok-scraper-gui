@@ -1,10 +1,10 @@
 # The Unofficial GUI for the Unofficial TikTokApi
 
-<sup> Latest Update: **v0.7** New Tabs for byHashtag/bySearch, Bookmarks Page, Allows importing cookies to workaround current api bugs </sup>
+Provides a user friendly interface for the [Unofficial TikTok Api](https://github.com/davidteather/TikTok-Api). Allows you to download your liked videos, videos from the trending page, user uploads, and more.
+
+<sup> Latest Update: **v0.7** New Tabs for byHashtag/bySearch, Bookmarks Page, Allows importing cookies as a workaround for current api bugs </sup>
 
 <sup> Note: Until v1, this is mostly here for showcasing. But if you would like to use it, just contact me and I can help you get it working on your machine (getting mpv working is a bit tricky). </sup>
-
-Provides a user friendly interface for the [Unofficial TikTok Api](https://github.com/davidteather/TikTok-Api). Allows you to download your liked videos, videos from the trending page, user uploads, and more.
 
 ![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
 
