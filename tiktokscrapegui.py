@@ -19,8 +19,6 @@
 from enum import unique
 import os
 import queue
-import random
-import string
 import sys
 import threading
 import time
@@ -29,23 +27,12 @@ from tkinter.constants import INSERT
 import tkinter.font as font
 from unicodedata import name
 import urllib
-import playsound
 from pathlib import Path
 from tkinter import ttk
-
 import asyncio
-from tornado.platform.asyncio import (
-    AsyncIOLoop,
-    to_asyncio_future,
-    AnyThreadEventLoopPolicy,
-)
-
-
 import cv2
 import mpv
-import PIL.ImageGrab
 import youtube_dl
-from ffmpy import FFmpeg
 from PIL import Image, ImageDraw, ImageTk
 from TikTokApi import TikTokApi
 import webbrowser

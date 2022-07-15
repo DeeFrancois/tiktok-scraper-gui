@@ -1,0 +1,5 @@
+opencv_python==4.5.3.56
+Pillow==9.2.0
+python-mpv==1.0.1
+TikTokApi==5.2.1
+youtube_dl==2021.12.17
