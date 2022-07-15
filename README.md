@@ -4,7 +4,7 @@ Provides a user friendly interface for the [Unofficial TikTok Api](https://githu
 
 <sup> Latest Update: **v0.7** New Tabs for byHashtag/bySearch, Bookmarks Page, Allows importing cookies as a workaround for current api bugs </sup>
 
-<sup> Note: Until v1, this is mostly here for showcasing. But if you would like to use it, just contact me and I can help you get it working on your machine (getting mpv working is a bit tricky). </sup>
+<sup> Disclaimer: Atleast until v1.0, this is mostly here for showcasing. But if you would like to use it, just contact me and I can help you get it working on your machine (getting mpv working is a bit tricky). </sup>
 
 ![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
 
@@ -12,7 +12,7 @@ Provides a user friendly interface for the [Unofficial TikTok Api](https://githu
 
 
 ## Motivation
-I figured more people could benefit from this api if it had an interface. I was also interested in getting experience with collaberating on a Github project, although I don't feel this is polished enough to share yet.
+I use TikTok for language learning and stumbled upon the very useful [Unofficial TikTok Api](https://github.com/davidteather/TikTok-Api) while looking for a way to download the videos. I figured I could utilize it more efficiently if it had an interface. I was initially focused on just downloading TikTok likes, but then I kept wanting to add more and more features to create a more complete and intuitive experience. I was also interested in getting experience with collaberating on a Github project, although I don't feel this is polished enough to share yet.
 
 ## How to use
 
