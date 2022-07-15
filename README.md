@@ -14,7 +14,21 @@ Provides a user friendly interface for the [Unofficial TikTok Api](https://githu
 ## Motivation
 I use TikTok for language learning and stumbled upon the very useful [Unofficial TikTok Api](https://github.com/davidteather/TikTok-Api) while looking for a way to download the videos. I figured I could utilize it more efficiently if it had an interface. I was initially focused on just downloading TikTok likes, but then I kept wanting to add more and more features to create a more complete and intuitive experience. I was also interested in getting experience with collaberating on a Github project, although I don't feel this is polished enough to share yet.
 
-## How to use
+## External dependencies
+- ffmpeg - https://www.ffmpeg.org/download.html
+- mpv - https://github.com/jaseg/python-mpv
+- youtube-dl - https://github.com/ytdl-org/youtube-dl
+
+## Python dependencies
+- opencv
+- Pillow
+- python-mpv
+- TikTokApi
+- youtube_dl
+
+You can just use pip to install them with the requirements.txt file provided
+
+## Usage
 
 **Make sure your likes are public, enter your username in the top bar, click Retrieve TikToks**
 
