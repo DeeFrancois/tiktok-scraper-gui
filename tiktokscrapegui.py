@@ -23,6 +23,7 @@
 # sync feature will use its own folder (tab within tab i guess) "Recent Likes" vs Recent Downloads
 
 # consider login feature or somehow automate the cookie pull/injection before that though
+#9/11 - extensio ncompletely broken but working on a process to automate importing lists manually
 from enum import unique
 import os
 import queue
@@ -124,7 +125,7 @@ class windowMaker:
         self.t4_sort_mode=0
         self.t5_sort_mode=0
 
-        self.retrieve_amount=200
+        self.retrieve_amount=20
 
         self.msg_queue=queue.Queue()
         self.download_queue=queue.Queue()
@@ -1084,7 +1085,7 @@ class windowMaker:
             self.user_liked_list=[]
             with open('cachedpulls/{}_likes_backup.json'.format(self.username),'rb') as file:
                 self.user_liked_list=json.load(file)
-                #self.user_liked_list=list(self.user_liked_list['itemList'])
+                self.user_liked_list=list(self.user_liked_list[0]['itemList'])
                     
             #print("Length on json: ",len(self.user_liked_list))
             if len(self.user_liked_list) >= self.retrieve_amount: #Doesnt cache when total videos is less than the requested
