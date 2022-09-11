@@ -16,6 +16,13 @@
 #so instead I can just use the cached list for the first load and do likedlist['as_dict']['id']
 # Only works when you can incorporate your own cookies, will try to automate this process (Companion Extension?)
 
+# 8/21/22 - New idea, should implement for EEL(?) version: Video Player window becomes it's own "Local Videos" tab, this tab will be its own folder organization suite:
+# local folder tab: add tags to videos, sort by tags, see file details in extra details panel, maybe smaller thumbnails to fit more, 
+# within this tab will be the sync feature - allocate 2gb (folder size limit) to auto-download tiktok likes on sync request
+# folder will auto delete oldest tiktoks for space, can mark tiktoks to be permanent saves (separate folder), 
+# sync feature will use its own folder (tab within tab i guess) "Recent Likes" vs Recent Downloads
+
+# consider login feature or somehow automate the cookie pull/injection before that though
 from enum import unique
 import os
 import queue
@@ -300,6 +307,7 @@ class windowMaker:
             self.t1_generated=1
 
         self.finishedFirstGeneration=1
+        print("FINISHED GENERATION")
         
     
     def display_uploads(self):
@@ -843,7 +851,7 @@ class windowMaker:
         #print("Unique ID: ",uniqueID)
         like_count = str(self.user_liked_list[self.t1_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
         ind = self.t1_index
-        print(self.user_liked_list[self.t1_index]['as_dict']['createTime'])
+        #print(self.user_liked_list[self.t1_index]['as_dict']['createTime'])
 
         #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
         normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
@@ -1070,8 +1078,9 @@ class windowMaker:
         #     self.var5.set(1) #just change it to a "Clear Cache" button later
 
         self.last_username = self.username
-
+        print("starting retrieval")
         if  os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.retrieve_amount)):
+            print("found backup file")
             self.user_liked_list=[]
             with open('cachedpulls/{}_likes_backup.json'.format(self.username),'rb') as file:
                 self.user_liked_list=json.load(file)
@@ -1085,6 +1094,7 @@ class windowMaker:
                 self.t1_display_button()
                 return
         else:
+            print("no backup file, fresh pull")
             #New Retrieval
             #self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
             #self.user_liked_list=list(self.api.user(username=self.username).liked())
@@ -1097,26 +1107,22 @@ class windowMaker:
             ###
            
             #
-            
+            ###############
+
             with open('cookies.json') as f:
                 cookies = json.load(f)
-
             cookies_kv = {}
             for cookie in cookies:
                 cookies_kv[cookie['name']] = cookie['value']
-
-
             cookies = cookies_kv
-
-
             def get_cookies(**kwargs):
                 return cookies
-
-
             api = TikTokApi()
-
             api._get_cookies = get_cookies  # This fixes issues the api was having
+            
+            print("cookies loaded")
             self.user_liked_list=list(api.user(username=self.username).liked(count=self.retrieve_amount))
+            print("finished fetch")
             self.backup_likes()
             self.get_liked_list()
             return
@@ -1158,7 +1164,7 @@ class windowMaker:
             if len(self.user_post_list) >= self.retrieve_amount:
                 self.t2_index = 0
                 self.user_post_list=self.sort_list(self.t2_sort_mode,self.user_post_list)
-                print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_liked_list)))
+                print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_post_list)))
                 self.t2_display_button()                
                 return
         
@@ -1344,12 +1350,12 @@ class windowMaker:
         
 
 
-        if self.var5.get() == 0: #cached list is ALWAYS used, so if it's unchecked just clear it before every pull 
-            try:
-                os.remove('cachedpulls/{}_hashtag_backup.json'.format(self.username))
-            except:
-                pass
-            self.var5.set(1) #just change it to a "Clear Cache" button later
+        # if self.var5.get() == 0: #cached list is ALWAYS used, so if it's unchecked just clear it before every pull 
+        #     try:
+        #         os.remove('cachedpulls/{}_hashtag_backup.json'.format(self.username))
+        #     except:
+        #         pass
+        #     self.var5.set(1) #just change it to a "Clear Cache" button later
         
         self.last_username = self.username
         
@@ -1385,12 +1391,12 @@ class windowMaker:
             api = TikTokApi()
 
             api._get_cookies = get_cookies  # This fixes issues the api was having
-            self.by_hashtag_list=list(api.hashtag(name=self.username).videos(200))
+            self.by_hashtag_list=list(api.hashtag(name=self.username).videos(count=self.retrieve_amount))
             self.backup_hashtag()
             self.get_liked_list()
             return        
         
-        self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
+        self.by_hashtag_list = self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
         
         if len(self.by_hashtag_list)==0:
             print("TikTok has blocked the retrieval. Maybe try again?")
@@ -1708,6 +1714,7 @@ class windowMaker:
             return str(o)
 
     def backup_likes(self):
+        print("starting backup process")
         with open('cachedpulls/{}_likes_backup.json'.format(self.username),'w') as f:
                 #json.dumps(self.user_liked_list,default=lambda o:o.__dict__,sort_keys=True,indent=4,f)
                 f.write('[')
@@ -1723,6 +1730,7 @@ class windowMaker:
                     
                     f.write("\n")
                 f.write(']')
+        print("finished backup process")
                 #print(okay)
                 #json.dump(self.user_liked_list,f)
 
