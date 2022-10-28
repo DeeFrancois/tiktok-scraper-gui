@@ -12,8 +12,8 @@
 # thread the previews as well
 # add trending tab
 
-# WIth TIkTokApi 5.0 we need to use likedlist['as_dict']['id'] to get info rather than likedlist['id'], but when I cache it I can no longer use "['as_dict']"
-#so instead I can just use the cached list for the first load and do likedlist['as_dict']['id']
+# WIth TIkTokApi 5.0 we need to use likedlist['id'] to get info rather than likedlist['id'], but when I cache it I can no longer use ""
+#so instead I can just use the cached list for the first load and do likedlist['id']
 # Only works when you can incorporate your own cookies, will try to automate this process (Companion Extension?)
 
 # 8/21/22 - New idea, should implement for EEL(?) version: Video Player window becomes it's own "Local Videos" tab, this tab will be its own folder organization suite:
@@ -575,14 +575,14 @@ class windowMaker:
         #self.updateTextbox("Completed {0}/{1}".format(loops,total)) Cant use with multithreading, wait until msg queue is set up
         if from_select == 1:
             for index in dl_list:
-                author = theList[index]['as_dict']['author']['uniqueId']
-                uniqueID = theList[index]['as_dict']['id']
+                author = theList[index]['author']['uniqueId']
+                uniqueID = theList[index]['id']
                 normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
                 self.download_queue.put((normalUrl,uniqueID))
         else:
             while count > -1 and self.continue_download==1:
-                author = theList[count]['as_dict']['author']['uniqueId']
-                uniqueID = theList[count]['as_dict']['id']
+                author = theList[count]['author']['uniqueId']
+                uniqueID = theList[count]['id']
                 normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
                 self.download_queue.put((normalUrl,uniqueID))
                 count-=1
@@ -718,50 +718,50 @@ class windowMaker:
         tab = self.tc.tab(self.tc.select(),"text")
 
         if(tab == "Your Likes"):
-            author = '@'+ self.user_liked_list[index]['as_dict']['author']['uniqueId']
-            nick = self.user_liked_list[index]['as_dict']['author']['nickname']
-            sound_title = "Sound: "+self.user_liked_list[index]['as_dict']['music']['title']
-            sound_ID = self.user_liked_list[index]['as_dict']['music']['id']
-            bio = self.user_liked_list[index]['as_dict']['author']['signature']
-            avatarLink = self.user_liked_list[index]['as_dict']['author']['avatarThumb']
-            uniqueID = self.user_liked_list[index]['as_dict']['id']
+            author = '@'+ self.user_liked_list[index]['author']['uniqueId']
+            nick = self.user_liked_list[index]['author']['nickname']
+            sound_title = "Sound: "+self.user_liked_list[index]['music']['title']
+            sound_ID = self.user_liked_list[index]['music']['id']
+            bio = self.user_liked_list[index]['author']['signature']
+            avatarLink = self.user_liked_list[index]['author']['avatarThumb']
+            uniqueID = self.user_liked_list[index]['id']
             
 
         elif(tab == "User Posts"):
-            author = '@'+ self.user_post_list[index]['as_dict']['author']['uniqueId']
-            nick = self.user_post_list[index]['as_dict']['author']['nickname']
-            sound_title = "Sound: "+self.user_post_list[index]['as_dict']['music']['title']
-            sound_ID = self.user_post_list[index]['as_dict']['music']['id']
-            bio = self.user_post_list[index]['as_dict']['author']['signature']
-            avatarLink = self.user_post_list[index]['as_dict']['author']['avatarThumb']
-            uniqueID = self.user_post_list[index]['as_dict']['id']
+            author = '@'+ self.user_post_list[index]['author']['uniqueId']
+            nick = self.user_post_list[index]['author']['nickname']
+            sound_title = "Sound: "+self.user_post_list[index]['music']['title']
+            sound_ID = self.user_post_list[index]['music']['id']
+            bio = self.user_post_list[index]['author']['signature']
+            avatarLink = self.user_post_list[index]['author']['avatarThumb']
+            uniqueID = self.user_post_list[index]['id']
 
         elif(tab == "Videos By Sound"):
-            author = '@'+ self.by_sound_list[index]['as_dict']['author']['uniqueId']
-            nick = self.by_sound_list[index]['as_dict']['author']['nickname']
-            sound_title = "Sound: "+self.by_sound_list[index]['as_dict']['music']['title']
-            sound_ID = self.by_sound_list[index]['as_dict']['music']['id']
-            bio = self.by_sound_list[index]['as_dict']['author']['signature']
-            avatarLink = self.by_sound_list[index]['as_dict']['author']['avatarThumb']
-            uniqueID = self.by_sound_list[index]['as_dict']['id']
+            author = '@'+ self.by_sound_list[index]['author']['uniqueId']
+            nick = self.by_sound_list[index]['author']['nickname']
+            sound_title = "Sound: "+self.by_sound_list[index]['music']['title']
+            sound_ID = self.by_sound_list[index]['music']['id']
+            bio = self.by_sound_list[index]['author']['signature']
+            avatarLink = self.by_sound_list[index]['author']['avatarThumb']
+            uniqueID = self.by_sound_list[index]['id']
 
         elif(tab == "Videos By Hashtag"):
-            author = '@'+ self.by_hashtag_list[index]['as_dict']['author']['uniqueId']
-            nick = self.by_hashtag_list[index]['as_dict']['author']['nickname']
-            sound_title = "Sound: "+self.by_hashtag_list[index]['as_dict']['music']['title']
-            sound_ID = self.by_hashtag_list[index]['as_dict']['music']['id']
-            bio = self.by_hashtag_list[index]['as_dict']['author']['signature']
-            avatarLink = self.by_hashtag_list[index]['as_dict']['author']['avatarThumb']
-            uniqueID = self.by_hashtag_list[index]['as_dict']['id']
+            author = '@'+ self.by_hashtag_list[index]['author']['uniqueId']
+            nick = self.by_hashtag_list[index]['author']['nickname']
+            sound_title = "Sound: "+self.by_hashtag_list[index]['music']['title']
+            sound_ID = self.by_hashtag_list[index]['music']['id']
+            bio = self.by_hashtag_list[index]['author']['signature']
+            avatarLink = self.by_hashtag_list[index]['author']['avatarThumb']
+            uniqueID = self.by_hashtag_list[index]['id']
 
         elif(tab == "Videos By Search"):
-            author = '@'+ self.by_search_list[index]['as_dict']['author']['uniqueId']
-            nick = self.by_search_list[index]['as_dict']['author']['nickname']
-            sound_title = "Sound: "+self.by_search_list[index]['as_dict']['music']['title']
-            sound_ID = self.by_search_list[index]['as_dict']['music']['id']
-            bio = self.by_search_list[index]['as_dict']['author']['signature']
-            avatarLink = self.by_search_list[index]['as_dict']['author']['avatarThumb']
-            uniqueID = self.by_search_list[index]['as_dict']['id']
+            author = '@'+ self.by_search_list[index]['author']['uniqueId']
+            nick = self.by_search_list[index]['author']['nickname']
+            sound_title = "Sound: "+self.by_search_list[index]['music']['title']
+            sound_ID = self.by_search_list[index]['music']['id']
+            bio = self.by_search_list[index]['author']['signature']
+            avatarLink = self.by_search_list[index]['author']['avatarThumb']
+            uniqueID = self.by_search_list[index]['id']
 
 
 
@@ -842,17 +842,17 @@ class windowMaker:
             return
         #print(self.user_liked_list[0])
         #print(self.user_liked_list[0]['video'])
-        #print("Hmm: ",self.user_liked_list[self.t1_index]['as_dict']['as_dict']['video']['originCover'])
-        img_url = self.user_liked_list[self.t1_index]['as_dict']['video']['originCover']
-        author = self.user_liked_list[self.t1_index]['as_dict']['author']['uniqueId']
-        #download_url = self.user_liked_list[self.t1_index]['as_dict']['video']['downloadAddr']
-        download_url = self.user_liked_list[self.t1_index]['as_dict']['video']['playAddr']
+        #print("Hmm: ",self.user_liked_list[self.t1_index]['video']['originCover'])
+        img_url = self.user_liked_list[self.t1_index]['video']['originCover']
+        author = self.user_liked_list[self.t1_index]['author']['uniqueId']
+        #download_url = self.user_liked_list[self.t1_index]['video']['downloadAddr']
+        download_url = self.user_liked_list[self.t1_index]['video']['playAddr']
         
-        uniqueID = self.user_liked_list[self.t1_index]['as_dict']['id']
+        uniqueID = self.user_liked_list[self.t1_index]['id']
         #print("Unique ID: ",uniqueID)
-        like_count = str(self.user_liked_list[self.t1_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
+        like_count = str(self.user_liked_list[self.t1_index]['stats']['playCount']/1000) + 'K Views'
         ind = self.t1_index
-        #print(self.user_liked_list[self.t1_index]['as_dict']['createTime'])
+        #print(self.user_liked_list[self.t1_index]['createTime'])
 
         #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
         normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
@@ -886,11 +886,11 @@ class windowMaker:
         if self.t2_index == len(self.user_post_list):
             #print("End of list")
             return
-        img_url = self.user_post_list[self.t2_index]['as_dict']['video']['originCover']
-        author = self.user_post_list[self.t2_index]['as_dict']['author']['uniqueId']
-        download_url = self.user_post_list[self.t2_index]['as_dict']['video']['playAddr']
-        uniqueID = self.user_post_list[self.t2_index]['as_dict']['id']
-        like_count = str(self.user_post_list[self.t2_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
+        img_url = self.user_post_list[self.t2_index]['video']['originCover']
+        author = self.user_post_list[self.t2_index]['author']['uniqueId']
+        download_url = self.user_post_list[self.t2_index]['video']['playAddr']
+        uniqueID = self.user_post_list[self.t2_index]['id']
+        like_count = str(self.user_post_list[self.t2_index]['stats']['playCount']/1000) + 'K Views'
         ind = self.t2_index
 
         #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
@@ -926,11 +926,11 @@ class windowMaker:
         if self.t3_index == len(self.by_sound_list):
             #print("End of list")
             return
-        img_url = self.by_sound_list[self.t3_index]['as_dict']['video']['originCover']
-        author = self.by_sound_list[self.t3_index]['as_dict']['author']['uniqueId']
-        download_url = self.by_sound_list[self.t3_index]['as_dict']['video']['downloadAddr']
-        uniqueID = self.by_sound_list[self.t3_index]['as_dict']['id']
-        like_count = str(self.by_sound_list[self.t3_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
+        img_url = self.by_sound_list[self.t3_index]['video']['originCover']
+        author = self.by_sound_list[self.t3_index]['author']['uniqueId']
+        download_url = self.by_sound_list[self.t3_index]['video']['downloadAddr']
+        uniqueID = self.by_sound_list[self.t3_index]['id']
+        like_count = str(self.by_sound_list[self.t3_index]['stats']['playCount']/1000) + 'K Views'
         ind = self.t3_index
 
 
@@ -965,11 +965,11 @@ class windowMaker:
         if self.t4_index == len(self.by_hashtag_list):
             #print("End of list")
             return
-        img_url = self.by_hashtag_list[self.t4_index]['as_dict']['video']['originCover']
-        author = self.by_hashtag_list[self.t4_index]['as_dict']['author']['uniqueId']
-        download_url = self.by_hashtag_list[self.t4_index]['as_dict']['video']['downloadAddr']
-        uniqueID = self.by_hashtag_list[self.t4_index]['as_dict']['id']
-        like_count = str(self.by_hashtag_list[self.t4_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
+        img_url = self.by_hashtag_list[self.t4_index]['video']['originCover']
+        author = self.by_hashtag_list[self.t4_index]['author']['uniqueId']
+        download_url = self.by_hashtag_list[self.t4_index]['video']['downloadAddr']
+        uniqueID = self.by_hashtag_list[self.t4_index]['id']
+        like_count = str(self.by_hashtag_list[self.t4_index]['stats']['playCount']/1000) + 'K Views'
         ind = self.t4_index
 
         #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
@@ -1003,11 +1003,11 @@ class windowMaker:
             if self.t5_index == len(self.by_search_list):
                 #print("End of list")
                 return
-            img_url = self.by_search_list[self.t5_index]['as_dict']['video']['originCover']
-            author = self.by_search_list[self.t5_index]['as_dict']['author']['uniqueId']
-            download_url = self.by_search_list[self.t5_index]['as_dict']['video']['downloadAddr']
-            uniqueID = self.by_search_list[self.t5_index]['as_dict']['id']
-            like_count = str(self.by_search_list[self.t5_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
+            img_url = self.by_search_list[self.t5_index]['video']['originCover']
+            author = self.by_search_list[self.t5_index]['author']['uniqueId']
+            download_url = self.by_search_list[self.t5_index]['video']['downloadAddr']
+            uniqueID = self.by_search_list[self.t5_index]['id']
+            like_count = str(self.by_search_list[self.t5_index]['stats']['playCount']/1000) + 'K Views'
             ind = self.t5_index
 
             #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
@@ -1065,7 +1065,7 @@ class windowMaker:
             return sorted(input_list,reverse=True,key=lambda item: int(item['stats']['playCount']))
         
         if sort_mode==3: #3 by views - ascending
-            return sorted(input_list,key=lambda item: int(item['as_dict']['stats']['playCount']))
+            return sorted(input_list,key=lambda item: int(item['stats']['playCount']))
 
     def get_liked_list(self):
         self.clear_canvas()
@@ -1420,8 +1420,8 @@ class windowMaker:
         list_index = 0
         for j in range(0,2):
             for i in range(0,3):
-                current = top_sounds[list_index]['as_dict']['music']['title']
-                soundID = top_sounds[list_index]['as_dict']['music']['id']
+                current = top_sounds[list_index]['music']['title']
+                soundID = top_sounds[list_index]['music']['id']
                 #urllib.request.urlretrieve(current,'{}/sounds/sound{}.mp3'.format(self.cwd,i))
                 #print("current)
                 thisBtn=tk.Button(self.t3frame_buttons,height=461,width=261,image=photo,compound='center',pady=1,padx=1,text=current, command=lambda a = soundID: self.updateSoundBox(soundID))
