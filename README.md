@@ -4,15 +4,12 @@ Provides a user friendly interface for the [Unofficial TikTok Api](https://githu
 
 <sup> Latest Update: **v0.7** New Tabs for byHashtag/bySearch, Bookmarks Page, Allows importing cookies as a workaround for current api bugs </sup>
 
-<sup> Disclaimer: Atleast until v1.0, this is mostly here for showcasing. But if you would like to use it, just contact me and I can help you get it working on your machine (mpv installation is a bit tricky). </sup>
+**Disclaimer: The API that this was made for is no longer functional which means this project is mostly just here for showcasing at this point.** 
 
 ![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
 
-#### *Currently only works if you input your own cookies after logging into the TikTok website. Once I can automate this process, I will release it as an exe*
-
-
 ## Motivation
-I use TikTok for language learning and stumbled upon the very useful [Unofficial TikTok Api](https://github.com/davidteather/TikTok-Api) while looking for a way to download the videos. I figured I could utilize it more efficiently if it had an interface. I was initially focused on just downloading TikTok likes, but then I kept wanting to add more and more features to create a more complete and intuitive experience. I was also interested in getting experience with collaberating on a Github project, although I don't feel this is polished enough to share yet.
+I use TikTok for language learning and stumbled upon the very useful [Unofficial TikTok Api](https://github.com/davidteather/TikTok-Api) while looking for a way to download the videos. Figured it would be more efficient to use if it had an interface. Initially, I was just focused on downloading TikTok likes, but then I kept wanting to add more and more features to create a more complete and intuitive experience. I was also interested in getting experience with collaberating on a Github project, although I don't feel this is polished enough to share yet.
 
 ## External dependencies
 - ffmpeg - https://www.ffmpeg.org/download.html
