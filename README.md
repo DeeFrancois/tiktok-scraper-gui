@@ -4,7 +4,7 @@ Provides a user friendly interface for the [Unofficial TikTok Api](https://githu
 
 <sup> Latest Update: **v0.7** New Tabs for byHashtag/bySearch, Bookmarks Page, Allows importing cookies as a workaround for current api bugs </sup>
 
-**Disclaimer: The API that this was made for is no longer functional which means this project is mostly just here for showcasing at this point. It can still work if you manually give it a list of tiktoks with a very specific format so if you're really interested in using this for some reason just contact me and I can show you how to set it up** 
+**DISCLAIMER: The API that this was made for is no longer functional which means this project is mostly just here for showcasing at this point. It can still work if you manually give it a list of tiktoks with a very specific format so if you're really interested in using this for some reason just contact me and I can show you how to set it up** 
 
 ![demo](https://github.com/DeeFrancois/tiktok-scraper-gui/blob/main/DocumentationImages/demo.gif)
 
