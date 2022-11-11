@@ -12,7 +12,7 @@
 # thread the previews as well
 # add trending tab
 
-# WIth TIkTokApi 5.0 we need to use likedlist['id'] to get info rather than likedlist['id'], but when I cache it I can no longer use ""
+# WIth TIkTokApi 5.0 we need to use likedlist['id'] to get info rather than likedlist['id'], but when I cache it I can no longer use "['as_dict']"
 #so instead I can just use the cached list for the first load and do likedlist['id']
 # Only works when you can incorporate your own cookies, will try to automate this process (Companion Extension?)
 
@@ -41,11 +41,14 @@ import asyncio
 import cv2
 import mpv
 import youtube_dl
+import yt_dlp
+from yt_dlp import YoutubeDL
 from PIL import Image, ImageDraw, ImageTk
 from TikTokApi import TikTokApi
 import webbrowser
 import json
 import shutil
+import subprocess
 #UNcomment when using pyinstaller for --noconsole (but playwright console still opens unfortunately..)
 #sys.stderr=open('log.txt','w')
 #sys.stdout=open('log.txt','w')
@@ -125,7 +128,7 @@ class windowMaker:
         self.t4_sort_mode=0
         self.t5_sort_mode=0
 
-        self.retrieve_amount=20
+        self.retrieve_amount=300
 
         self.msg_queue=queue.Queue()
         self.download_queue=queue.Queue()
@@ -294,6 +297,7 @@ class windowMaker:
                 self.t1_display_a_tiktok()
             except Exception as e:
                 print(e)
+                # print("WHAT")
                 pass
             if count == 1:
                 self.get_details(0)
@@ -575,18 +579,18 @@ class windowMaker:
         #self.updateTextbox("Completed {0}/{1}".format(loops,total)) Cant use with multithreading, wait until msg queue is set up
         if from_select == 1:
             for index in dl_list:
-                author = theList[index]['author']['uniqueId']
-                uniqueID = theList[index]['id']
+                author = theList[index]['as_dict']['author']['uniqueId']
+                uniqueID = theList[index]['as_dict']['id']
                 normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
-                self.download_queue.put((normalUrl,uniqueID))
+                self.download_queue.put((normalUrl,uniqueID,author))
         else:
             while count > -1 and self.continue_download==1:
-                author = theList[count]['author']['uniqueId']
-                uniqueID = theList[count]['id']
+                author = theList[count]['as_dict']['author']['uniqueId']
+                uniqueID = theList[count]['as_dict']['id']
                 normalUrl = "https://www.tiktok.com/@" + author + "/video/" + uniqueID
-                self.download_queue.put((normalUrl,uniqueID))
+                self.download_queue.put((normalUrl,uniqueID,author))
                 count-=1
-                #self.updateTextbox("Completed {0}/{1}".format(loops,total))
+                # print("Completed {0}/{1}".format(loops,total))
         if from_select == 1:
             self.deselect()
             from_select = 0
@@ -620,7 +624,7 @@ class windowMaker:
         self.t4_download_list.clear()
         self.t5_download_list.clear()
 
-    def single_download_or_select(self,link,download_url,unique_id,ind):
+    def single_download_or_select(self,link,download_url,unique_id,ind,author):
 
         #Click Button --> call single download with link for download, ind for select --> if select: add button_index to list for current tab
         if self.var3.get() == 1 and self.start_download_list==0: #Select 
@@ -670,12 +674,12 @@ class windowMaker:
             #self.updateTextbox("{0} TikToks Selected".format(str(len(self.download_list))))
 
         else: #Download
-            self.download_queue.put((download_url,unique_id))
-            #self.test_download_without_ytdl(link,unique_id)
+            self.download_queue.put((link,unique_id,author)) 
+            #Use "link" for download without watermark, download_url for with watermark
     
     def test_download_without_ytdl(self,link,unique_id):
-        #verifyFp = "verify_kst2zk4o_Eb8C43pd_mnu3_4Vhc_ACNi_3KKX3Zc9dUNA"
-        video_bytes = self.api.get_video_by_url(link,custom_device_id=self.verifyFp)
+        # video_bytes = self.api.get_video_by_url(link,custom_device_id=self.verifyFp)
+        video_bytes = self.api.get_video_by_url(link)
         with open("{}.mp4".format(unique_id),"wb") as out:
             out.write(video_bytes)
 
@@ -718,50 +722,50 @@ class windowMaker:
         tab = self.tc.tab(self.tc.select(),"text")
 
         if(tab == "Your Likes"):
-            author = '@'+ self.user_liked_list[index]['author']['uniqueId']
-            nick = self.user_liked_list[index]['author']['nickname']
-            sound_title = "Sound: "+self.user_liked_list[index]['music']['title']
-            sound_ID = self.user_liked_list[index]['music']['id']
-            bio = self.user_liked_list[index]['author']['signature']
-            avatarLink = self.user_liked_list[index]['author']['avatarThumb']
-            uniqueID = self.user_liked_list[index]['id']
+            author = '@'+ self.user_liked_list[index]['as_dict']['author']['uniqueId']
+            nick = self.user_liked_list[index]['as_dict']['author']['nickname']
+            sound_title = "Sound: "+self.user_liked_list[index]['as_dict']['music']['title']
+            sound_ID = self.user_liked_list[index]['as_dict']['music']['id']
+            bio = self.user_liked_list[index]['as_dict']['author']['signature']
+            avatarLink = self.user_liked_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.user_liked_list[index]['as_dict']['id']
             
 
         elif(tab == "User Posts"):
-            author = '@'+ self.user_post_list[index]['author']['uniqueId']
-            nick = self.user_post_list[index]['author']['nickname']
-            sound_title = "Sound: "+self.user_post_list[index]['music']['title']
-            sound_ID = self.user_post_list[index]['music']['id']
-            bio = self.user_post_list[index]['author']['signature']
-            avatarLink = self.user_post_list[index]['author']['avatarThumb']
-            uniqueID = self.user_post_list[index]['id']
+            author = '@'+ self.user_post_list[index]['as_dict']['author']['uniqueId']
+            nick = self.user_post_list[index]['as_dict']['author']['nickname']
+            sound_title = "Sound: "+self.user_post_list[index]['as_dict']['music']['title']
+            sound_ID = self.user_post_list[index]['as_dict']['music']['id']
+            bio = self.user_post_list[index]['as_dict']['author']['signature']
+            avatarLink = self.user_post_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.user_post_list[index]['as_dict']['id']
 
         elif(tab == "Videos By Sound"):
-            author = '@'+ self.by_sound_list[index]['author']['uniqueId']
-            nick = self.by_sound_list[index]['author']['nickname']
-            sound_title = "Sound: "+self.by_sound_list[index]['music']['title']
-            sound_ID = self.by_sound_list[index]['music']['id']
-            bio = self.by_sound_list[index]['author']['signature']
-            avatarLink = self.by_sound_list[index]['author']['avatarThumb']
-            uniqueID = self.by_sound_list[index]['id']
+            author = '@'+ self.by_sound_list[index]['as_dict']['author']['uniqueId']
+            nick = self.by_sound_list[index]['as_dict']['author']['nickname']
+            sound_title = "Sound: "+self.by_sound_list[index]['as_dict']['music']['title']
+            sound_ID = self.by_sound_list[index]['as_dict']['music']['id']
+            bio = self.by_sound_list[index]['as_dict']['author']['signature']
+            avatarLink = self.by_sound_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.by_sound_list[index]['as_dict']['id']
 
         elif(tab == "Videos By Hashtag"):
-            author = '@'+ self.by_hashtag_list[index]['author']['uniqueId']
-            nick = self.by_hashtag_list[index]['author']['nickname']
-            sound_title = "Sound: "+self.by_hashtag_list[index]['music']['title']
-            sound_ID = self.by_hashtag_list[index]['music']['id']
-            bio = self.by_hashtag_list[index]['author']['signature']
-            avatarLink = self.by_hashtag_list[index]['author']['avatarThumb']
-            uniqueID = self.by_hashtag_list[index]['id']
+            author = '@'+ self.by_hashtag_list[index]['as_dict']['author']['uniqueId']
+            nick = self.by_hashtag_list[index]['as_dict']['author']['nickname']
+            sound_title = "Sound: "+self.by_hashtag_list[index]['as_dict']['music']['title']
+            sound_ID = self.by_hashtag_list[index]['as_dict']['music']['id']
+            bio = self.by_hashtag_list[index]['as_dict']['author']['signature']
+            avatarLink = self.by_hashtag_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.by_hashtag_list[index]['as_dict']['id']
 
         elif(tab == "Videos By Search"):
-            author = '@'+ self.by_search_list[index]['author']['uniqueId']
-            nick = self.by_search_list[index]['author']['nickname']
-            sound_title = "Sound: "+self.by_search_list[index]['music']['title']
-            sound_ID = self.by_search_list[index]['music']['id']
-            bio = self.by_search_list[index]['author']['signature']
-            avatarLink = self.by_search_list[index]['author']['avatarThumb']
-            uniqueID = self.by_search_list[index]['id']
+            author = '@'+ self.by_search_list[index]['as_dict']['author']['uniqueId']
+            nick = self.by_search_list[index]['as_dict']['author']['nickname']
+            sound_title = "Sound: "+self.by_search_list[index]['as_dict']['music']['title']
+            sound_ID = self.by_search_list[index]['as_dict']['music']['id']
+            bio = self.by_search_list[index]['as_dict']['author']['signature']
+            avatarLink = self.by_search_list[index]['as_dict']['author']['avatarThumb']
+            uniqueID = self.by_search_list[index]['as_dict']['id']
 
 
 
@@ -836,21 +840,19 @@ class windowMaker:
 
 
     def t1_display_a_tiktok(self):
+        # WHEN IMPORTING A MANUAL LIST YOU HAVE TO REMOVE ['AS_DICT']
         if self.t1_index == len(self.user_liked_list):
-            #print("End of list")
             print("End of list")
             return
-        #print(self.user_liked_list[0])
-        #print(self.user_liked_list[0]['video'])
-        #print("Hmm: ",self.user_liked_list[self.t1_index]['video']['originCover'])
-        img_url = self.user_liked_list[self.t1_index]['video']['originCover']
-        author = self.user_liked_list[self.t1_index]['author']['uniqueId']
-        #download_url = self.user_liked_list[self.t1_index]['video']['downloadAddr']
-        download_url = self.user_liked_list[self.t1_index]['video']['playAddr']
+        img_url = self.user_liked_list[self.t1_index]['as_dict']['video']['originCover']
+        author = self.user_liked_list[self.t1_index]['as_dict']['author']['uniqueId']
         
-        uniqueID = self.user_liked_list[self.t1_index]['id']
+        #download_url = self.user_liked_list[self.t1_index]['video']['downloadAddr']
+        download_url = self.user_liked_list[self.t1_index]['as_dict']['video']['playAddr']
+        
+        uniqueID = self.user_liked_list[self.t1_index]['as_dict']['id']
         #print("Unique ID: ",uniqueID)
-        like_count = str(self.user_liked_list[self.t1_index]['stats']['playCount']/1000) + 'K Views'
+        like_count = str(self.user_liked_list[self.t1_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
         ind = self.t1_index
         #print(self.user_liked_list[self.t1_index]['createTime'])
 
@@ -869,7 +871,7 @@ class windowMaker:
         photo = ImageTk.PhotoImage(img)
         self.t1_images.append(photo)
 
-        thisBtn=tk.Button(self.frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda:self.single_download_or_select(normalUrl,download_url,uniqueID,ind))
+        thisBtn=tk.Button(self.frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda:self.single_download_or_select(normalUrl,download_url,uniqueID,ind,author))
         thisBtn.grid(row=self.t1_row,column=self.t1_col)
         
         thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,download_url,1))
@@ -886,11 +888,11 @@ class windowMaker:
         if self.t2_index == len(self.user_post_list):
             #print("End of list")
             return
-        img_url = self.user_post_list[self.t2_index]['video']['originCover']
-        author = self.user_post_list[self.t2_index]['author']['uniqueId']
-        download_url = self.user_post_list[self.t2_index]['video']['playAddr']
-        uniqueID = self.user_post_list[self.t2_index]['id']
-        like_count = str(self.user_post_list[self.t2_index]['stats']['playCount']/1000) + 'K Views'
+        img_url = self.user_post_list[self.t2_index]['as_dict']['video']['originCover']
+        author = self.user_post_list[self.t2_index]['as_dict']['author']['uniqueId']
+        download_url = self.user_post_list[self.t2_index]['as_dict']['video']['playAddr']
+        uniqueID = self.user_post_list[self.t2_index]['as_dict']['id']
+        like_count = str(self.user_post_list[self.t2_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
         ind = self.t2_index
 
         #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
@@ -907,7 +909,7 @@ class windowMaker:
         photo = ImageTk.PhotoImage(img)
         self.t2_images.append(photo)
 
-        thisBtn=tk.Button(self.t2frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind))
+        thisBtn=tk.Button(self.t2frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind,author))
         thisBtn.grid(row=self.t2_row,column=self.t2_col)
         
         thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,download_url,2))
@@ -926,11 +928,11 @@ class windowMaker:
         if self.t3_index == len(self.by_sound_list):
             #print("End of list")
             return
-        img_url = self.by_sound_list[self.t3_index]['video']['originCover']
-        author = self.by_sound_list[self.t3_index]['author']['uniqueId']
-        download_url = self.by_sound_list[self.t3_index]['video']['downloadAddr']
-        uniqueID = self.by_sound_list[self.t3_index]['id']
-        like_count = str(self.by_sound_list[self.t3_index]['stats']['playCount']/1000) + 'K Views'
+        img_url = self.by_sound_list[self.t3_index]['as_dict']['video']['originCover']
+        author = self.by_sound_list[self.t3_index]['as_dict']['author']['uniqueId']
+        download_url = self.by_sound_list[self.t3_index]['as_dict']['video']['downloadAddr']
+        uniqueID = self.by_sound_list[self.t3_index]['as_dict']['id']
+        like_count = str(self.by_sound_list[self.t3_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
         ind = self.t3_index
 
 
@@ -948,7 +950,7 @@ class windowMaker:
         photo = ImageTk.PhotoImage(img)
         self.t3_images.append(photo)
 
-        thisBtn=tk.Button(self.t3frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind))
+        thisBtn=tk.Button(self.t3frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind,author))
         thisBtn.grid(row=self.t3_row,column=self.t3_col)
         
         thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,download_url,3))
@@ -965,11 +967,11 @@ class windowMaker:
         if self.t4_index == len(self.by_hashtag_list):
             #print("End of list")
             return
-        img_url = self.by_hashtag_list[self.t4_index]['video']['originCover']
-        author = self.by_hashtag_list[self.t4_index]['author']['uniqueId']
-        download_url = self.by_hashtag_list[self.t4_index]['video']['downloadAddr']
-        uniqueID = self.by_hashtag_list[self.t4_index]['id']
-        like_count = str(self.by_hashtag_list[self.t4_index]['stats']['playCount']/1000) + 'K Views'
+        img_url = self.by_hashtag_list[self.t4_index]['as_dict']['video']['originCover']
+        author = self.by_hashtag_list[self.t4_index]['as_dict']['author']['uniqueId']
+        download_url = self.by_hashtag_list[self.t4_index]['as_dict']['video']['downloadAddr']
+        uniqueID = self.by_hashtag_list[self.t4_index]['as_dict']['id']
+        like_count = str(self.by_hashtag_list[self.t4_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
         ind = self.t4_index
 
         #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
@@ -986,7 +988,7 @@ class windowMaker:
         photo = ImageTk.PhotoImage(img)
         self.t4_images.append(photo)
 
-        thisBtn=tk.Button(self.t4frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind))
+        thisBtn=tk.Button(self.t4frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind,author))
         thisBtn.grid(row=self.t4_row,column=self.t4_col)
         
         thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,download_url,4))
@@ -1003,11 +1005,11 @@ class windowMaker:
             if self.t5_index == len(self.by_search_list):
                 #print("End of list")
                 return
-            img_url = self.by_search_list[self.t5_index]['video']['originCover']
-            author = self.by_search_list[self.t5_index]['author']['uniqueId']
-            download_url = self.by_search_list[self.t5_index]['video']['downloadAddr']
-            uniqueID = self.by_search_list[self.t5_index]['id']
-            like_count = str(self.by_search_list[self.t5_index]['stats']['playCount']/1000) + 'K Views'
+            img_url = self.by_search_list[self.t5_index]['as_dict']['video']['originCover']
+            author = self.by_search_list[self.t5_index]['as_dict']['author']['uniqueId']
+            download_url = self.by_search_list[self.t5_index]['as_dict']['video']['downloadAddr']
+            uniqueID = self.by_search_list[self.t5_index]['as_dict']['id']
+            like_count = str(self.by_search_list[self.t5_index]['as_dict']['stats']['playCount']/1000) + 'K Views'
             ind = self.t5_index
 
             #Build URL www.tiktok.com/@[UserName]/video/[uniqueID]
@@ -1024,7 +1026,7 @@ class windowMaker:
             photo = ImageTk.PhotoImage(img)
             self.t5_images.append(photo)
 
-            thisBtn=tk.Button(self.t5frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind))
+            thisBtn=tk.Button(self.t5frame_buttons,font=self.button_font,height=461,width=261,pady=1,padx=1,image=photo,compound='center',command=lambda: self.single_download_or_select(normalUrl,download_url,uniqueID,ind,author))
             thisBtn.grid(row=self.t5_row,column=self.t5_col)
             
             thisBtn.bind("<Button-3>",lambda e: self.right_click(ind,download_url,5))
@@ -1079,15 +1081,14 @@ class windowMaker:
         #     self.var5.set(1) #just change it to a "Clear Cache" button later
 
         self.last_username = self.username
-        print("starting retrieval")
         if  os.path.isfile('cachedpulls/{}_likes_backup.json'.format(self.username,self.retrieve_amount)):
             print("found backup file")
             self.user_liked_list=[]
             with open('cachedpulls/{}_likes_backup.json'.format(self.username),'rb') as file:
                 self.user_liked_list=json.load(file)
-                self.user_liked_list=list(self.user_liked_list[0]['itemList'])
+                # self.user_liked_list=list(self.user_liked_list[0]['itemList']) for manual pull
+                self.user_liked_list=list(self.user_liked_list)
                     
-            #print("Length on json: ",len(self.user_liked_list))
             if len(self.user_liked_list) >= self.retrieve_amount: #Doesnt cache when total videos is less than the requested
                 self.t1_index = 0
                 self.user_liked_list=self.sort_list(self.t1_sort_mode,self.user_liked_list)
@@ -1096,20 +1097,7 @@ class windowMaker:
                 return
         else:
             print("no backup file, fresh pull")
-            #New Retrieval
-            #self.user_liked_list = self.api.user_liked_by_username(username=self.username,count=self.displayChunk,custom_did=self.did)
-            #self.user_liked_list=list(self.api.user(username=self.username).liked())
-
-            #here
-            # self.temp_list=list(self.api.user(username=self.username).liked(count=30,cursor=0))
-            # print(self.temp_list[len(self.temp_list)-1].as_dict)
-            # time.sleep(2)
-            # self.user_liked_list=self.temp_list+(list(self.api.user(username=self.username).liked(count=30,cursor=0)))
-            ###
-           
-            #
-            ###############
-
+            
             with open('cookies.json') as f:
                 cookies = json.load(f)
             cookies_kv = {}
@@ -1128,9 +1116,6 @@ class windowMaker:
             self.get_liked_list()
             return
         
-            #print(self.user_liked_list)
-            
-
         self.user_liked_list = self.sort_list(self.t1_sort_mode,self.user_liked_list)
         
         if len(self.user_liked_list)==0:
@@ -1168,7 +1153,6 @@ class windowMaker:
                 print("Retrieved {} tiktoks from cache. Disable 'Use Cached Lists' to retrieve a fresh list instead".format(len(self.user_post_list)))
                 self.t2_display_button()                
                 return
-        
         
         else:
 
@@ -1364,6 +1348,7 @@ class windowMaker:
             self.by_hashtag_list=[]
             with open('cachedpulls/{}_hashtag_backup.json'.format(self.username)) as file:
                 self.by_hashtag_list=json.load(file)
+                # self.by_hashtag_list=list(self.by_hashtag_list)
                     
             #print("Length on json: ",len(self.by_hashtag_list))
             if len(self.by_hashtag_list) >= self.retrieve_amount:
@@ -1394,7 +1379,7 @@ class windowMaker:
             api._get_cookies = get_cookies  # This fixes issues the api was having
             self.by_hashtag_list=list(api.hashtag(name=self.username).videos(count=self.retrieve_amount))
             self.backup_hashtag()
-            self.get_liked_list()
+            self.get_hashtag_list()
             return        
         
         self.by_hashtag_list = self.sort_list(self.t4_sort_mode,self.by_hashtag_list)
@@ -1420,8 +1405,8 @@ class windowMaker:
         list_index = 0
         for j in range(0,2):
             for i in range(0,3):
-                current = top_sounds[list_index]['music']['title']
-                soundID = top_sounds[list_index]['music']['id']
+                current = top_sounds[list_index]['as_dict']['music']['title']
+                soundID = top_sounds[list_index]['as_dict']['music']['id']
                 #urllib.request.urlretrieve(current,'{}/sounds/sound{}.mp3'.format(self.cwd,i))
                 #print("current)
                 thisBtn=tk.Button(self.t3frame_buttons,height=461,width=261,image=photo,compound='center',pady=1,padx=1,text=current, command=lambda a = soundID: self.updateSoundBox(soundID))
@@ -2063,12 +2048,12 @@ package ifneeded awdark 7.12 \
         
         self.t1_download_last_frame =ttk.Frame(self.headerButtonFrame)
         self.t1_download_last_frame.grid(row=0,column=5,columnspan=2) #4 5
-        self.t1_download_last_label = ttk.Label(self.t1_download_last_frame, state='disabled',text="Download Last(Max 500): ")
+        self.t1_download_last_label = ttk.Label(self.t1_download_last_frame,text="Download Last(Max 500): ")
         self.t1_download_last_label.grid(row=0,column=0)
-        self.t1_download_last_bar = ttk.Entry(self.t1_download_last_frame,state='disabled',width=5)
+        self.t1_download_last_bar = ttk.Entry(self.t1_download_last_frame,width=5)
         self.t1_download_last_bar.grid(row=0,column=1)
 
-        self.t1_download_start_button=ttk.Button(self.headerButtonFrame, state='disabled',text="Start Downloads",command=threading.Thread(target=self.download_last).start)
+        self.t1_download_start_button=ttk.Button(self.headerButtonFrame,text="Start Downloads",command=threading.Thread(target=self.download_last).start)
         self.t1_download_start_button.grid(row=0,column=7)
 
         self.t1_sort_selector_button = ttk.Button(self.headerButtonFrame,text="Sort - Recent",command=self.t1_select_sort_mode)
@@ -2522,6 +2507,13 @@ package ifneeded awdark 7.12 \
         dl=DownloaderThread(self.msg_queue,self.download_queue)
         dl.daemon=True
         dl.start()
+
+        # for i in range(50):
+        #     print("STARTING THREAD: ",i)
+        #     dl=DownloaderThread(self.msg_queue,self.download_queue)
+        #     dl.daemon=True
+        #     dl.start()
+
         self.create_folders()
         
         #Enter Default preferences and stuff
@@ -2720,18 +2712,22 @@ class DownloaderThread(threading.Thread):
         self.dl_queue = dl_queue
         self.api=TikTokApi()
 
-    def download_with_ytdl(self,link,unique_id):
+    def download_with_ytdl(self):
         print("In download")
         cwd = os.getcwd()
-        ydl_opts = {'outtmpl':'{0}/demovids/{1}.%(ext)s'.format(cwd,unique_id)}
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            try:
-                print("Okay downloading: ",link)
-                ydl.download([link])
-            except:
-                pass
-                #print("Error on this download: ", link)
-
+        # ydl_opts = {
+        #     'outtmpl':'{0}/downloads/nowatermark/{2}_{1}.mp4'.format(cwd,self.unique_id,self.author),
+        #     '--add-metadata':True
+        # }
+        # # with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        # with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        #     try:
+        #         print("Okay downloading: ",self.link)
+        #         ydl.download([self.link])
+        #     except:
+        #         pass
+        subprocess.run(["yt-dlp"," {}".format(self.link),"--no-mtime","--add-metadata","--postprocessor-args","-metadata title={}_{}".format(self.author,self.unique_id),"-o","{0}/downloads/multitest/{2}_{1}.%(ext)s".format(cwd,self.unique_id,self.author)])
+        print("FINISHED")
     def download(self):
         print("In download")
         # cwd = os.getcwd()
@@ -2760,7 +2756,7 @@ class DownloaderThread(threading.Thread):
             time.sleep(1)
             try:
                 
-                self.link,self.unique_id= self.dl_queue.get(0)
+                self.link,self.unique_id,self.author= self.dl_queue.get(0)
                 if int(self.dl_queue.qsize()) == 1:
                     print("{} video in queue".format(1))
                 else:
@@ -2771,7 +2767,9 @@ class DownloaderThread(threading.Thread):
                 loop=asyncio.new_event_loop() 
                 asyncio.set_event_loop(loop)
                 #loop.run_until_complete(self.download())
-                self.download()
+                # self.download()
+                
+                self.download_with_ytdl()
                 #asyncio.set_event_loop(None)
                 loop.close()
             except queue.Empty:
