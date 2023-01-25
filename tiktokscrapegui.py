@@ -300,12 +300,15 @@ class windowMaker:
                 # print("WHAT")
                 pass
             if count == 1:
-                self.get_details(0)
+                try:
+                    self.get_details(0)
+                except Exception as e:
+                    print(e)
+                    
         self.add_scroll_buffer("Your Likes")
         self.t1_retrieve_button.config(text='Retrieve TikToks')
         self.t1_retrieve_button.config(command=self.get_liked_list)
         self.t1_generation_lock=0
-
         if len(self.user_liked_list) == 0:
             self.t1_generated=0
         else:
@@ -2508,7 +2511,7 @@ package ifneeded awdark 7.12 \
         dl.daemon=True
         dl.start()
 
-        # for i in range(50):
+        # for i in range(50): For when I need to download hundreds of tiktoks, this lets me do it in parallel
         #     print("STARTING THREAD: ",i)
         #     dl=DownloaderThread(self.msg_queue,self.download_queue)
         #     dl.daemon=True
